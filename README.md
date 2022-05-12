@@ -5,4 +5,4 @@ It is the distribution set of IDAE (The Integrative Data Analysis Environment fo
 
 #Please check the updating manual.ppt for instrucrion.
 
-hkuwabara1@jhmi.edu
+
