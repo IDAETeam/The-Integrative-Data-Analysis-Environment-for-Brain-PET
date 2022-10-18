@@ -46,7 +46,7 @@ set(findobj(gcf, 'Tag','L2W_gUseR0'),      ...
 set(findobj(gcf,'Tag','L2W_gUseR1C1'), 'String','Plasma',   ...
                                 'Callback','cv2_getCPT(''get'',1);',    'UserData',iii);
 %
-set(findobj(gcf,'Tag','L2W_gUseR1C2'), 'String','HPLC',     ...
+set(findobj(gcf,'Tag','L2W_gUseR1C2'), 'String','HPLC',     .../.,
                                 'Callback','cv2_getCPT(''get'',2);',    'UserData',iii);
 %
 set(findobj(gcf,'Tag','L2W_gUseR1C3'), 'String','Cancel',   ...
@@ -71,26 +71,28 @@ fbc                             = [udL2W(1, 1:2), udR1C1{end}];
 %
 [f1, g1]                        = mv2_genfln(udR1C1{1}, fbc);
 pet_is                          = feval(g4iv2.yyy.lds, 'pet_d2i',   f1);
-if exist(pet_is,'dir')~=7;                                                          return;         end;
 [f2, g2]                      	= mv2_genfln(udR1C1{iii(1)+1}, fbc);
 if g2>0;                        set(gco,    'BackgroundColor',iv2_bgcs(12));        return;         end;
-[f3, g3]                        = mv2_genfln(fullfile('pet', [job{iii(1)},'_source.m']), fbc);
-if g3>0;                        f3b                         = umo_getptf(f3,0,[]);
-else;                           f3b                         = [];                                   end;
-%
-if isempty(f3b) || ~exist(f3b,'file');
-    [fname, path_x]           	= uigetfile(fullfile(pet_is,'*'));
-    if ~ischar(fname);                                                              return;         end;
-    [fdx, fnm, fex]          	= fileparts(fname);
-    [f3x, f3m]                  = fileparts(f3);
-    f3b                         = fullfile(f3x, [f3m,fex]);
-    disp(['> copying ',job{iii(1)},' source file..']);
-    disp(['  input: ',path_x,fname]);
-    disp([' output: ',f3b]);
-    copyfile(fullfile(path_x, fname),   f3b);
-    write2ptf(f3, f3b);                                                                             end;
-%
-my_getCPT(job{iii(1)},  {f3b}, {f2});
+my_getCPT(job{iii(1)},  pet_is, f2);
+% if exist(pet_is,'dir')~=7;                                                          return;         end;
+% if g2>0;                        set(gco,    'BackgroundColor',iv2_bgcs(12));        return;         end;
+% [f3, g3]                        = mv2_genfln(fullfile('pet', [job{iii(1)},'_source.m']), fbc);
+% if g3>0;                        f3b                         = umo_getptf(f3,0,[]);
+% else;                           f3b                         = [];                                   end;
+% %
+% if isempty(f3b) || ~exist(f3b,'file');
+%     [fname, path_x]           	= uigetfile(fullfile(pet_is,'*'));
+%     if ~ischar(fname);                                                              return;         end;
+%     [fdx, fnm, fex]          	= fileparts(fname);
+%     [f3x, f3m]                  = fileparts(f3);
+%     f3b                         = fullfile(f3x, [f3m,fex]);
+%     disp(['> copying ',job{iii(1)},' source file..']);
+%     disp(['  input: ',path_x,fname]);
+%     disp([' output: ',f3b]);
+%     copyfile(fullfile(path_x, fname),   f3b);
+%     write2ptf(f3, f3b);                                                                             end;
+% %
+% my_getCPT(job{iii(1)},  {f3b}, {f2});
 %
 if exist(f2,'file');            set(gco,    'BackgroundColor',iv2_bgcs(12));                        end;
 return;

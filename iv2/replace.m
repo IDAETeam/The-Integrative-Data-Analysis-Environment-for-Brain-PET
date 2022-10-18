@@ -16,7 +16,8 @@ if nargin<margin;               help(mfilename);                                
 
 i1L                             = [i2,i1,i2];
 s                               = findstr(i1L,              i2);
-if length(s)<3;                 disp(['Not found    ... ',i2,' in ',i1]);           return;         end;
+if length(s)<3;                 disp(['.not found: ',i2,' in ',i1]);           
+                                out                         = i1;                   return;         end;
 
 L                               = size(i2,  2);
 out                             = i1L(1,    s(1)+L:s(2)-1);
