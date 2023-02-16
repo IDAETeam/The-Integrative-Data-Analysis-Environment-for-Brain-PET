@@ -272,7 +272,7 @@ opt4plot                       	= char('regn7/8/9','byregion','byscan','bysubjec
 opt4disp                        = char('grandmean','ascendingx','descendingx','individual', ...
                                     'sdse0/1/2','median','bysubject','anova','ttest','shnan0/1');
 opt4boxp                        = char('ascendingx','descendingx','pool','shnan0/1',        ...
-                                    'udsave','horizontal','full','bysubject');
+                                    'udsave','horizontal','full','bysubject','compact');
 opt4vudx                        = char('subplot[r,c]','fitOmax','Omax=x%','Spaghetti',      ...
                                                             'above@0.05');
 opt4sysd                        = char('summary','plus');
@@ -318,7 +318,7 @@ exp4boxp                        = char(         ...
                                     'save data, vnos, g1, g2, g3 (if any), and info to userdata',   ...
                                     'in horizontal orientation (default: vertical)',                ...
                                     'display regions by full labels (default: short labels)',       ...
-                                    'by subject, pooling regions');
+                                    'by subject, pooling regions', 'compact style (help boxplot');
 exp4vudx                        = char(         ...
                                     'to assign columns (of udx) to scans ',                         ...
                                     'to use subplot; [1,1] for one figure per region)',             ...
@@ -332,7 +332,7 @@ exp4sysd                        = char(         ...
 %
 exp4save                        = char(         ...
                                     'enter output file in file#whatever.xlsx (no need for path)',   ...
-                                    'enter VOI set flag in voi_flg#whatever (sheet name)');
+                                    'append abc of voi_flg#abc to sheetname (=var-name_scan-flag)');
 exp4spmt                        = char('map-derived mask','SN-specific GM mask',    ...
                                     'SN-specific GM+WM mask');
 exp4spmp                        = exp4spmt;
@@ -437,15 +437,21 @@ if dno>0;
 figure;
 % by subhect:
 if opt_bysu>0;                  disp('.using by-subject option:');
-                                boxplot(ddd(:),g3(:));
+    if opt_comp>0;              boxplot(ddd(:),g3(:), 'plotstyle','compact');
+    else;                       boxplot(ddd(:),g3(:));                                              end
                                 set(gca,    'Fontsize',13);
                                 set(gca,    'XTick',1:1:size(g3,1), 'XTickLabel',sid(g3(:,1)),   ...
                                     'XTickLabelRotation',90);                       
                                 set(findobj(gca, 'LineStyle','--'), 'LineStyle','-');
                                 set(findobj(gca, 'Marker','+'),     'Marker','.');  return;         end;
 %
-if opt_hori>0;                  boxplot(ddd(:),[g1(:), g2(:)],  'orientation','horizontal');
-else;                           boxplot(ddd(:),[g1(:), g2(:)]);                                     end;
+if opt_hori>0;                  
+    if opt_comp>0;              boxplot(ddd(:),[g1(:), g2(:)],  ...
+                                         'Orientation','horizontal', 'plotstyle','compact');
+    else;                       boxplot(ddd(:),[g1(:), g2(:)],  'orientation','horizontal');        end;
+else;
+    if opt_comp>0;              boxplot(ddd(:),[g1(:), g2(:)], 'plotstyle','compact');
+    else;                       boxplot(ddd(:),[g1(:), g2(:)]);                             end;    end
 vv                              = VOIdef(vx);
 if opt_full>0;
     vv.anm(:, 1)                = upper(vv.anm(:,1));
@@ -790,8 +796,9 @@ if ~exist(fileparts(xls),'dir');    mkdir(fileparts(xls));                      
 mmm                             = {'Sheet Names', 'Methods', 'Variables', 'PETs',  'Groups'};
 for i=1:1:numel(mmm);           qqq{i, 1}                   = mmm{i};                               end;
 for i=1:1:numel(info);          sno                         = str2num(info{i}.snos);
-                                qqq{1, i+1}                 = [deblank(info{i}.vnm),'@',deblank(    ...
-                                                                g4iv2.yyy.cMat(sno, :)),voi_flag]; 
+
+                                qqq{1, i+1}                 = [deblank(info{i}.vnm),'_',deblank(    ...
+                                                                g4iv2.yyy.cMat(sno, :)),voi_flag];
                                 qqq{2, i+1}                 = info{i}.method;
     if any(info{i}.tsv~=' ');   qqq{3, i+1}                 = info{i}.tsv;
     else;                       qqq{3, i+1}                 = info{i}.vnm;                          end;
@@ -799,56 +806,48 @@ for i=1:1:numel(info);          sno                         = str2num(info{i}.sn
                                 qqq{5, i+1}                 = info{i}.grp;                          end;
                                 
 % xlswrite(xls,   qqq, 1,  ['A1:',char(abs('A')+size(qqq,2)-1),'5']);
-writecell(qqq', xls,    'Sheet',1,  'Range',['A1:E',int2str(size(qqq,2))]);
+writecell(qqq', xls,    'Sheet','Info',  'Range',['A1:E',int2str(size(qqq,2))]);
 
 %%
 vv                              = VOIdef(vnos{1});
 vv.anm(:, 1)                    = upper(vv.anm(:, 1));
-ccc                             = zeros(1, 3);
-ic                              = abs('A');
 for i=1:1:size(vv.anm,1);       snm{i}                      = deblank(vv.snm(i, :));
-                                anm{i}                      = deblank(vv.anm(i, :));
-                                ic                          = ic + 1;
-                                ccc(1,  3)                  = ic;
-    if ic>abs('Z');             ic                          = abs('A');
-                                ccc(1,  3)                  = abs('A');
-        if ~ccc(1,2);           ccc(1,  2)                  = abs('A');
-        else;                   ccc(1,  2)                  = ccc(1, 2) + 1;                        end;
-        if ccc(1, 2)>abs('Z');  
-            if ~ccc(1,1);       ccc(1,  1)                  = abs('A');
-            else;               ccc(1,  1)                  = ccc(1, 1) + 1;        end;    end;    end;
-                                                                                                    end;
+                                anm{i}                      = deblank(vv.anm(i, :));                end
+% # of column for VOIs by alphabets:
+cc                              = [0, 0];
+cc(:, 1)                        = abs(1 - ceil((size(vv.anm,1)+1)./26));
+cc(:, 2)                        = size(vv.anm,1) + 1 - cc(1,1).*26;
 %
 writecell({['Labels',voi_flag], ['Regions',voi_flag]}, xls, 'Sheet',1,  'Range','G1:H1')
-writecell(snm', xls,       'Sheet',1,      'Range',['G2:G',int2str(size(vv.anm,1)+1)]);
-writecell(anm', xls,       'Sheet',1,      'Range',['H2:H',int2str(size(vv.anm,1)+1)]);
+writecell(snm', xls,       'Sheet','Info',      'Range',['G2:G',int2str(size(vv.anm,1)+1)]);
+writecell(anm', xls,       'Sheet','Info',      'Range',['H2:H',int2str(size(vv.anm,1)+1)]);
 % xlswrite(xls,   {'Labels','Regions'}, 1,     'A7:B7');
 % xlswrite(xls,   snm',   1,  ['A8:A',int2str(7+size(vv.anm,1))]);
 % xlswrite(xls,   anm',   1,  ['B8:B',int2str(7+size(vv.anm,1))]);
 
 for i=1:1:numel(dat);
-    writecell(qqq(2:5, [1,i+1]),    xls,    'Sheet',i+1,    'Range','A1:B4');
-    writecell({'Regions'},          xls,    'Sheet',i+1,    'Range','A5');
-    writecell(sid(d2u{i}>0)',       xls,    'Sheet',i+1,    'Range',['A6:A',int2str(5 + sum(d2u{1}))]);
-    writecell(snm,                  xls,    'Sheet',i+1,    'Range',['B5:',char(ccc(ccc>0)),'5']);
-    writematrix(dat{i}(d2u{i}>0, :),xls,    'Sheet',i+1,    ...
-                            'Range',['B6:',char(ccc(ccc>0)),int2str(4+sum(d2u{i}>0)+1)]);           end;
+    writecell(qqq(2:5, [1,i+1]),    xls, 'Sheet',qqq{1, i+1}, 'Range','A1:B4');
+    writecell({'Regions'},          xls, 'Sheet',qqq{1, i+1}, 'Range','A5');
+    writecell(sid(d2u{i}>0)',       xls, 'Sheet',qqq{1, i+1}, 'Range',['A6:A',int2str(5 + sum(d2u{1}))]);
+    writecell(snm,                  xls, 'Sheet',qqq{1, i+1}, 'Range',['B5:',char(cc(cc>0)+64),'5']);
+    writematrix(dat{i}(d2u{i}>0, :),xls, 'Sheet',qqq{1, i+1},    ...
+                            'Range',['B6:',char(cc(cc>0)+64),int2str(4+sum(d2u{i}>0)+1)]);           end;
 %     xlswrite(xls,   qqq(2:5, [1,i+1]),  i+1,    'A1:B4');
 %     xlswrite(xls,   {'Regions'},        i+1,    'A5');
 %     xlswrite(xls,   sid(d2u{i}>0)',     i+1,    ['A6:A',int2str(5 + sum(d2u{1}))]);
 %    xlswrite(xls,   snm,  i+1,  ['B5:',char(ccc(ccc>0)),'5']);
 %     xlswrite(xls,   dat{i}(d2u{i}>0, :),i+1,    ['B6:',char(ccc(ccc>0)),int2str(4+sum(d2u{i})+1)]); end;
 %
-e = actxserver('Excel.Application'); % # open Activex server
-e.Quit
+% e = actxserver('Excel.Application'); % # open Activex server
+% e.Quit
 
-e = actxserver('Excel.Application'); % # open Activex server
-ewb = e.Workbooks.Open(xls); % # open file (enter full path!)
-ewb.Worksheets.Item(1).Name = 'Info'; % # rename 1st sheet
-for i=2:1:numel(dat)+1;       	ewb.Worksheets.Item(i).Name = qqq{1, i};                            end;
-ewb.Save % # save to the same file
-ewb.Close(false)
-e.Quit
+% e = actxserver('Excel.Application'); % # open Activex server
+% ewb = e.Workbooks.Open(xls); % # open file (enter full path!)
+% ewb.Worksheets.Item(1).Name = 'Info'; % # rename 1st sheet
+% for i=2:1:numel(dat)+1;       	ewb.Worksheets.Item(i).Name = qqq{1, i};                            end;
+% ewb.Save % # save to the same file
+% ewb.Close(false)
+% e.Quit
 %
 disp('.done! (requested variables in a excel file)');
 disp([' output: ',xls]);
