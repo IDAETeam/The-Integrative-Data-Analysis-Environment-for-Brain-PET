@@ -743,7 +743,6 @@ if ~any(mflg~=' ');                                                             
 k                               = 1;
 if ~isempty(x.p4mpe.flg);       
     k                           = umo_cstrs(char(x.p4mpe.flg(1,:)), [mflg,' '], 'im1');
-    % adding a new method if 'mflg' is not registered yet:
     if k<1;                     k                           = size(x.p4mpe.flg,2) + 1;      end;    end;
 % 
 %
@@ -968,10 +967,10 @@ return;
 function                        local_save_to_file;
 %%
 x                               = get(gcf,      'UserData');
-% Step 2 is done!
+% Sstep 2 is done!
 if isfield(x,'s4mpe');          local_save_to_file_s2(x);                           return;         end;
 %
-% Step 1 is done:
+% step 1 is done:
 %
 % checking if OTCM & PRGA are included when TTCM4* is entered:
 if any(umo_cstrs(char(x.p4mpe.mfg), 'TTCM4', 'im1')>0);
@@ -990,22 +989,7 @@ if any(umo_cstrs(char(x.p4mpe.mfg), 'TTCM4', 'im1')>0);
                                 pause(1);                                                           end;
         set(h0, 'String',s0,    'BackgroundColor',bgc0);                            return;         end;
                                                                                                     end;
-% % when MRTM2 is included - checking if to fix k2R: 
-% if strcmpi(x.p4mpe.mflg,'RTMs') && umo_cstrs(char(x.p4mpe.flg(1, :)),'MRTM2','im1')>0   ...
-%     && strcmpi(x.p4mpe.flg{4,umo_cstrs(char(x.p4mpe.flg(1, :)),'MRTM2','im1')}{end},'fix')
-%     rtga_                       = umo_cstrs(char(x.p4mpe.flg(1, :)),'RTGA','im1');
-%     if rtga_<1;
-%         set(findobj(gcf, 'Tag','prep.MPE.info'),    'BackgroundColor',iv2_bgcs(11),     ...
-%             'String','Critical error! Include RTGA to fix k2R in MRTM2. Restart');
-%         pause(1);
-%         delete(gcf);                                                                return;         end
-%     %
-%     mrtm2_                      = umo_cstrs(char(x.p4mpe.flg(1, :)),'MRTM2','im1');
-%     for i=1:1:size(x.p4mpe.flg{4,rtga_},1);
-%         x.p4mpe.flg{4,mrtm2_}{i+1}                          = deblank(x.p4mpe.flg{4,rtga_}(i, :));
-%         x.p4mpe.res{4,mrtm2_}(i+1, :)                       = x.p4mpe.res{4,rtga_}(i);              end
-%                                                                                                     end
-%    
+%
 p4mpe                           = x.p4mpe;
 v                               = load(x.p4mpe.vinfo);
 p4mpe.vflg                      = v.v4tacs.vfg;
@@ -1216,16 +1200,6 @@ disp([  ...
     '.Save or update selections .. ',10,                ...
     '  Hit ''Done'' GUI and respond to subsequent inquireries.',10,             ...
     '*** End of the help information ***']);
-
-    global g4iv2;
-    d                           = dir(fullfile(g4iv2.yyy.idx,'mpe','r4PIMs*.mat'));
-    if numel(d)<1;              disp('> no accumulated PIM sets yet');              return;         end
-    %
-    disp('> past PIM sets:')
-    for i=1:1:numel(d);         disp(['* ',d(i).name,' *']);
-                                x                           = load(fullfile(d(i).folder,d(i).name));
-                                dispCharArrays(1,char(x.s4mpe.ext_str));                            end
-    disp('< end of the PIM set list')
 else;
 disp([  ...
     '*** Setting reference tissue methos ***',10,           ...

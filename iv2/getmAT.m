@@ -235,35 +235,17 @@ return;
 
 function                        local_mix(ezm,ezr,eza,vnos,thx);
 %%
-%
-cm1                             = umo_cstrs(int2str(vnos(:,1)),[], 'cm1');
-if any(cm1(:,2)>1);
-    disp('.problem! duplications of VOIs in ''val'' of ''mix'' option:')
-    vv                          = VOIdef(vnos(cm1(:,2)>1,1));
-    dispCharArrays(1,vv.anm)
-    disp('> chack ''val'' of ''mix'' option');                                      return;         end
-%
 d                              	= gei(ezr,                  'dataInfo');
-
 vv                              = VOIdef(vnos(:,1));
 if size(vnos,2)==1;
-    v_in                        = vnos(:, 1);
-    vm                          = consolidVOINos([], v_in);
-    cmx                         = umo_cstrs(int2str(vm),[], 'cm1');
-    vnos                        = zeros(sum(cmx(:,2)), 4);
-    vnos(:,1)                   = vm(cmx(:,2)>0, :);
-    %
-    vW                          = consolidVOINos(v_in, vnos(:,1));
-    vL                          = consolidVOINos(v_in, vnos(:,1)+100);
-    vR                          = consolidVOINos(v_in, vnos(:,1)+200);
-    vnos(:, 2:4)                = double([vW(:,2)>0, vL(:,2)>0, vR(:,2)>0]);
-    vnos(vnos(:,3)>0 & vnos(:,4)>0, 2)                      = 1;
-    vv                          = VOIdef(vnos(:,1));
-    disp('.input ''val'' of ''mix'' option - converted to n by 4 as follows:')
-    disp(' (regions with 1 will be reported)')
+    vnos                        = [vnos(:,1), ones(size(vnos,1), 3)];
+    v3                          = consolidVOINos([], vnos(:, 1));
+    vi                          = zeros(size(vnos,1), 2);
+    for i=2:1:3;                vi(:)                       = consolidVOINos(v3, vnos(:,1)+(i-1).*100);
+                                vnos(:, i+1)                = vi(:,2)>0;                            end;
+    disp('.convering vnos from n by 1 to n by 4 (1=to report; 0=to ignore)');
     dispCharArrays(1,char('Regoions',vv.anm),2,char('merged',int2str(vnos(:,2))),   ...
-       	1,char('left',int2str(vnos(:,3))),3,char('right',int2str(vnos(:,4)))); 
-    disp('< end of the list');                                                                      end
+       	1,char('left',int2str(vnos(:,3))),3,char('right',int2str(vnos(:,4))));                      end;
 %
 vnos(:, 2:4)                    = double(vnos(:, 2:4)>0);
 v2r                             = zeros(size(vnos,1),   3);

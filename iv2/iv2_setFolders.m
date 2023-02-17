@@ -36,8 +36,8 @@ if isempty(which(dxetc4xxx)); 	disp(['.wrong 1st input: ',dxetc4xxx]);         	
 idx                             = feval(dxetc4xxx,  'idx',userName);
 if ~exist(idx,'dir');           disp(['.unknow user: ',userName]);                  return;         end;
 
-% if ~exist(fullfile(dxetc4xxx,iProj),'dir');
-%                                 mkdir(fullfile(dxetc4xxx,iProj));                                   end;
+if ~exist(fullfile(dxetc4xxx,iProj),'dir');
+                                mkdir(fullfile(dxetc4xxx,iProj));                                   end;
 % setting 
 for i=1:1:numel(d2cval);        
     if ~exist(fullfile(idx,iProj,d2cval{i}),'dir');

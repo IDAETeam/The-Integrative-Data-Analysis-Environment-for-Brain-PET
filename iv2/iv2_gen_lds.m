@@ -8,7 +8,7 @@ function    iv2_gen_lds(fun,i2);
 
 margin                          = 2;
 if nargin<margin;               helq(mfilename);                                    return;         end;
-if exist(which(['local_',lower(fun)]))
+if exist(which(['local_',lower(fun)]));
                                 feval(['local_',lower(fun)], i2);
 else;                           disp(['.unknown local function: ',fun]);                            end;
 return;
@@ -40,6 +40,7 @@ if exist(fullfile(fileparts(which(mfilename)), [ud.lds,'.mat']),'file');
                                 resume                      = 1;                                    end;
 %
 ns                              = 22;
+tstr                            = 'iProject generator';
 [fH, bpos]                      = bWindow([], ...
                                 'nrs',                      ns+2,               ...
                                 'bwd',                      600,                ...
@@ -50,7 +51,7 @@ set(fH,                         'Toolbar',                  'none',             
 %
 bHs                             = postJBs(fH,               'B',bpos(1,:),[8,2;1,1]);
 c1bHs(1)                     	= bHs(1);
-set(c1bHs(1),   'Tag','iv2_gen_lds_1_1',    'BackgroundColor',iv2_bgcs(6), 'FontWeight','bold');
+set(c1bHs(1),   'Tag','iv2_gen_lds_1_1',    'BackgroundColor',iv2_bgcs(12), 'FontWeight','bold');
 c2bHs(1)                        = bHs(2);
 set(c2bHs(1),   'Tag','iv2_gen_lds_1_2');
 %
@@ -79,329 +80,302 @@ ud.c2bHs                        = c2bHs;
 % when resuming previously saved variables:
 if resume>0;                    set(gcf,    'UserData',ud);
                                 local_resume(ud);                                   return;         end;
-local_sort_idae(ud);
+                                
+ud.stage                        = 'idae_0';
+set(gcf,    'UserData',ud);
+%
+set(c1bHs(1),   'String','Definitions of computer species for this session');
+set(c2bHs(1),   'String','Move on', 'CallBack','iv2_gen_lds(''done'',[]);');
+set(c1bHs(2),   'String','Workstations to perform data-analysis with IDAE');
+set(c1bHs(3),   'String','Data Server (n=1) to store analysis inputs/outputs');
+set(c1bHs(4),   'String','Image Server (n=1) to provide reconstructed PET & MRI files'); 
+set(c1bHs(5),   'String','(Data and Image servers could be physically identical)');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+    {'* Entertained combinations of Workstations/Data Server/Image Server:',     ...
+    '1. Windows/Windows/Windows',   ...
+    '2. Linux/Linux/Linx, and', ...
+    '3. Windows using Linux terminal emulator/Linux/Linux', ...
+    '* Not ready for other combinations for now (Quit)'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 return;
 %%
 
-function                        local_sort_idae(ud);
+function                        local_pet_is(to_resume);
 %%
+ud                              = get(gcf,  'UserData');
+set(gco,    'Enable','off');
 %
-set(ud.c1bHs(1),   'String','Functional definitions of computer species for this session');
-set(ud.c2bHs(1),   'String','Move on', 'CallBack','iv2_gen_lds(''done'',[]);');
-set(ud.c1bHs(2),   'String','Workstations (WS) perform data-analysis with IDAE');
-set(ud.c1bHs(3),   'String','Image Server (IS; n=1) provides reconstructed PET & MRI files'); 
-set(ud.c1bHs(4),   'String','Data Server (DS; n=1) stores analysis inputs/outputs (n=1), and');
-set(ud.c1bHs(5),   'String','has a folder housing user folders for all users, including you');
-%
-set(ud.c1bHs(6),   'String','Questionaries about your home directory in Data server', ...
-                                                            'BackgroundColor',iv2_bgcs(16));
-%
-ic                              = 7;
-set(ud.c1bHs(ic), 'String','Enter your username that was set in Data server');
-if isfield(ud.idae,'user_name');
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''copy_paste'',[]);');
-    set(ud.c1bHs(ic+1), 'Style','text', 'UserData','user_name',     ...
-                            'String',ud.idae.user_name,  'HorizontalAlignment','center');
-else
-    set(ud.c2bHs(ic), 'String','Start', 'CallBack','iv2_gen_lds(''copy_paste'',[]);');
-    set(ud.c1bHs(ic+1), 'Style','text', 'UserData','user_name',     ...
-                            'String',' ',  'HorizontalAlignment','center');                         end
-%
-% user's home directory
-ic                              = 9;
-set(ud.c1bHs(ic), 'String','Select a file from your home directory in Data server');
-if isfield(ud.idae,'user_home')
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',ud.idae.user_home, 'Style','text', ...
-                                'UserData','user_home', 'HorizontalAlignment','center');
+if to_resume>0;                 path_x                      = ud.pet.is.real;
 else;
-    set(ud.c2bHs(ic), 'String','Start', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');    
-    set(ud.c1bHs(ic+1), 'String',' ', 'Style','text', ...
-                                'UserData','user_home', 'HorizontalAlignment','center');            end
+    [fname, path_x]          	= uigetfile(fullfile(pwd,'*'));
+    if ~ischar(fname);         	set(gco,    'Enable','on');                         return;         end;
+    %
+    ud.pet.is.real            	= path_x;                                                           end;
 %
-% user's IDAE home directory
-ic                              = 11;
-set(ud.c1bHs(ic), 'String','Generate your IDAE home directory in Data server');
-if isfield(ud.idae,'user_home')
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''idae_home'',[]);');
-    set(ud.c1bHs(ic+1), 'String',fullfile(ud.idae.user_home,'iv2'), ...
-                                'Style','text', 'HorizontalAlignment','center');
-else;
-    set(ud.c2bHs(ic), 'String','Do it', 'CallBack','iv2_gen_lds(''idae_home'',[]);');  
-    set(ud.c1bHs(ic+1), 'String',' ', 'Style','text', 'HorizontalAlignment','center');              end
-
+if path_x(1)==filesep;          s0                          = filesep;
+else;                           s0                          = '';                                   end;
 %
-if isfield(ud.idae,'new_user')
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-        {'* Setting IDAE for a new user'
-        '> Enter your username (Done > type your username > Enter)'
-        '  (skip Questionaries 2 & 3 if no change to the conventions)'
-        '> Hit ''Move on'' @top-right'});
-else
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-        {'* Observe functional definitions of WS/IS/DS for this session'
-        ' - WS/IS/DS may be phisically identical or separated in any ways'
-        ' - IS is usullay managed by the PET/MRI Centers'
-        '> Complete questionaries about your home directory in Data server '
-        ' - The last segment of your home directory must agree with your username'
-        ' - This module creates a folder to place files/folders for performance of IDAE'});         end
-%
-ud.stage                        = 'set_idae';
-set(gcf, 'UserData',ud);
-return;
-%%
-
-function                        local_pet_is(ud);
-%%
-%
-if isempty(ud);                 ud                          = get(gcf, 'UserData');                 end;
-local_reset_guis(ud);
-%
-ud.pet_is.real_c                = local_str2cell(ud.pet.is.real);
-ns                              = numel(ud.pet_is.real_c);
-%
-set(ud.c1bHs(1), 'String','Starting the section of PET path in Image server');
-set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
-%
-set(ud.c1bHs(ns+2),  'String','Want to re-select path? If so, restart >');
-set(ud.c2bHs(ns+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
-    'ud.stage=''idae_done''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);']);
-%
-for i=1:1:ns;
-    set(ud.c1bHs(i+1),  'String',ud.pet_is.real_c{i});
-    set(ud.c2bHs(i+1),  'String',['seg_',int2str(i)], 'CallBack','iv2_gen_lds(''toggle_pet'',0);'); end
-%
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'FontName','Consolas',  'FontSize',10, ...
-    'HorizontalAlignment','left', 'String',     ...
-    {'* PET path segments (left) and segment #s (right) are shown'
-    '> Identify at least one each of (using right GUIs which toggles):'
-    ' 1. Fixed segments (i.e., consistent across all subjects/scans), and'
-    ' 2. the first PET-proper segment'
-    '> Hit ''Done'' when all are done'});
+path_x(path_x==' ')             = '*';
+path_x(path_x==filesep)         = ' ';
+sc                              = getLseg(path_x,   [0,2]);
 %
 ud.stage                        = 'pet_is_1';
+%
+% construction of source PET path in a cell array:
+for i=1:1:numel(sc);            sc{i}(sc{i}=='*')           = ' ';                                  end;
+sc{1}                           = [s0,sc{1}];
+%
+ud.pet_is.real_c                = sc;
+%
+set(ud.c1bHs(1), 'String','PET Path in Image server. Select one each from right column. Then, hit >');
+set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
+%
+set(ud.c1bHs(numel(sc)+2),  'String','Want to re-select path? If so, restart >');
+set(ud.c2bHs(numel(sc)+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
+    'ud.stage=''idae_done''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);']);
+%
+s2x                             = {'Select','fixed (= left column)','variable','Subject_ID','PET_ID'};
+ud.sc_pet_is                  	= s2x;
+s2e                             = {' ','Common to all subjects/scans',     ...
+                                    'To vary across subjects/scans',                    ...
+                                    'Subject folder, if any','Segment to pin down PET scans'};
+s1{1}                           = '* Selections for path segments:';
+s1c1                            = char(s2x(2:end));
+s1c2                            = char(s2e(2:end));
+for i=1:1:size(s1c1,1);         s1{i+1}                     = [' ',s1c1(i, :),'  : ',s1c2(i, :)];  	end;
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',s1,    'FontName','Consolas',  ...
+                                'FontSize',10,  'HorizontalAlignment','left')
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'),    'UserData',s1);
+% dispCharArrays(1,char(s2x(2:end)),3,char(s2e(2:end)));
+% disp('< end list');
+for i=1:1:numel(sc);
+    set(ud.c1bHs(i+1),  'String',sc{i});
+    set(ud.c2bHs(i+1),  'Value',1,  'Style','popupmenu',    'String',s2x);                          end;
+%
 set(gcf,    'UserData',ud);
-return;
-%%
-
-function                        local_toggle_pet(i2);
-%%
-set(findobj(gcf, 'Tag','iv2_gen_lds_1_2'), 'Enable','on')
-if strncmpi(get(gco,'String'),'seg',3);
-    set(gco, 'String','fixed', 'BackgroundColor',iv2_bgcs(18));
-elseif strncmpi(get(gco,'String'),'fix',3);
-    set(gco, 'String','PET folder', 'BackgroundColor',iv2_bgcs(16)); 
-else;
-    s0                          = get(gco, 'Tag');
-    s1                          = find(s0=='_',2, 'last');
-    set(gco, 'String',['seg_',int2str(str2num(s0(s1(1)+1:s1(2)-1))-1)], ...
-                                                            'BackgroundColor',iv2_bgcs(0));         end
 return;
 %%
 
 function                        local_done(i2);
 %%
 ud                              = get(gcf,  'UserData');
-% ud.stage
 feval(['local_done_',ud.stage], ud);
 return;
 %%
 
 function                      	local_done_pet_is_1(ud);
 %%
-[symbolic_c, search_c]          = local_done_xxx_is_1(ud.pet_is.real_c,ud.c1bHs,ud.c2bHs);
+v                               = zeros(numel(ud.pet_is.real_c),    1);
+v(:)                            = local_check_res(v,    ud.c2bHs);
+if any(v<2);                                                                        return;         end;
 %
-if isempty(symbolic_c);
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String',  ...
-        {'* Incomplete responses'
-        '> Identify at least one each of (using right GUIs which toggles):'
-        ' 1. Fixed segments (i.e., consistent across all subjects/scans), and'
-        ' 2. the first PET-proper segment'});                                       return;         end
+clear ss;
+for i=1:1:size(v, 1);           ss{i}                       = ' ';                                  end;
+im1                             = umo_cstrs(char(ud.sc_pet_is), ['fix';'var';'Sub';'PET'],  'im1');
+% converting segment selections into symbolic segments:
+for i=find(v'==im1(1));         ss{i}                       = ud.pet_is.real_c{i};                  end;
+for i=find(v'==im1(2));         ss{i}                       = '*';                                  end;
+for i=find(v'==im1(3));         ss{i}                       = '$Subject_ID$';                       end;
+ic                              = 0;
+for i=find(v'==im1(4));         ic                          = ic + 1;
+                                ss{i}                       = ['$PET_ID_',int2str(ic),'$'];     	end;
 %
-% removing callback from right column GUIs:
-set(ud.c2bHs(2:numel(symbolic_c)+1), 'CallBack',' ');
-%
-ud.pet_is.symbolic_c            = symbolic_c;
-ud.pet_is.search_c              = search_c;
-ud.pet.is.symbolic              = local_str2cell(symbolic_c);
-
-local_done_pet_is_2(ud);
-%
-return
-%% 
-
-function    [o1, o2]            = local_done_xxx_is_1(real_c,c1bHs,c2bHs);
-%%
-fixSer                          = umo_cstrs(['fix';'Ser';'PET'],  ...
-                                    char(get(c2bHs(2:numel(real_c)+1), 'String')), 'im1');
-%
-o1                              = [];       % = symbolic_c
-o2                              = [];       % = search_c
-ok                              = 1;
-if ~any(fixSer==1);             ok                          = 0;                                    end
-if ~any(fixSer==2) && ~any(fixSer==3)
-                                ok                          = 0;                                    end
-if ok<1;                                                                            return;         end
-%
-o1                              = real_c;
-for i=1:1:size(fixSer, 1)
-    if fixSer(i)==2;            o1{i}                       = '$Series_ID$';
-    elseif fixSer(i)==3;        o1{i}                       = '$PET_ID$';
-    elseif fixSer(i)<1;         o1{i}                       = '#';                          end;    end
-%
-o2i                             = o1;
-for i=find(fixSer'>1);          o2i{i}                      = '#';                                  end
-%
-% defining segments for source file search:
-fixSer(find(fixSer>1,1):end)    = max(fixSer);
-% 
-% to include 'pet folder' for PET (not including 'Series folder' for MRI:
-if max(fixSer)==3;              fixSer(find(fixSer==3,1))   = 0;                                    end;
-%
-set(c1bHs(find(fixSer<1)+1),    'BackgroundColor',iv2_bgcs(18));
-%
-o2                              = o2i(1:find(fixSer>1,1)-1);
-%     fixSer(find(fixSer==2,1):end)                           = 2;
-%     set(c1bHs())
-% 
-% % 
-% % setting callback for non-fixed left-column GUIs:
-% set(ud.c1bHs(find(fixSer~=1)+1), 'CallBack',['iv2_gen_lds(''toggle'',''',pom,''');']);
-% 
-% % 
-% set(ud.c1bHs(1), 'String','Follow the instructions below. Hit > when done');
-% set(ud.c2bHs(1), 'String','Accept',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','off');
-% 
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',                           ...
-% 	{'* Try if one segment can narrow down the search for '
-%     ['  ',upper(pom),' source files sufficiently (to use when IDAE is up)']
-%     '> Hit a path segment (left) you think the best (i.e., the least error-prone)'
-%     '  in your system and observed/respond the results shown here'});
-return;
-%%
-
-function                        local_done_pet_is_2(ud);
-%%
-local_done_xxx_is_2(ud.c1bHs,'pet')
-ud.stage                        = 'pet_is_3';
-%
-set(ud.c2bHs(1), 'String','Done');
-%
-set(gcf,    'UserData',ud);
-return;
-%%
-
-function                        local_done_xxx_is_2(c1bHs,pom);
-%%
-% extracting marked segments (=the search criteria):
-c18                             = iv2_bgcs(18);
-mkd                             = find( sum( abs(cell2mat(get(c1bHs, 'BackgroundColor')) - ...
-                                    c18(ones(numel(c1bHs),1), :)), 2) < 10.^-6) -1;
-%
-if isempty(mkd);                set(c1bHs(1), 'BackgroundColor',iv2_bgcs(11));
-                                pause(0.5);
-                                set(c1bHs(1), 'BackgroundColor',iv2_bgcs(6));   return;         end
-% 
-% making path segments of the search criteria editable:
-set(c1bHs(mkd+1), 'Style','edit', 'Callback',' ');
-%
+set(ud.c1bHs(1), 'String','Done!. See infoBord. Hit > to move on');
+set(ud.c2bHs(1), 'String','Move on')
+set(ud.c2bHs(2:end),    'Enable','off');
+out                             = ss{1};
+for i=2:1:numel(ss);            out                         = fullfile(out, ss{i});                 end;
+ud.pet.is.symbolic              = out;
+ud.pet_is.symbolic_c            = ss;
+ud.stage                        = 'pet_is_2';
+set(gcf,    'UserData',ud);                                                     
 %
 set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-	{['* Any orange segment(s) (left; editable) include date of ',upper(pom),'?']
-    '> If yes, replace date integers with yyyy or yy (year), mm (month), and dd (day)'
-    ' - Leave fixed elements unchanged (e.g., ''abc-'' of abc-yyyymmdd), and'
-    ' - Replace inconsistent elements with * in the segment(s)'
-    '> Hit ''Done'' @top-right when done'})
-% 
-set(c1bHs(1), 'String',['Work on ',upper(pom),' date elements as instructed below, if any.']);
+	{'* Generalized PET path for image server: ',   ...
+    [' ',ud.pet.is.symbolic],'> hit ''Display'' to view more'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+%
+return;
+%%
+
+function    out                 = local_check_res(v,c2bHs);
+%%
+out                             = zeros(size(v));
+for i=1:1:size(v,1);
+    out(i, :)                   = get(c2bHs(i+1),  'Value');
+    if out(i)<2;                set(c2bHs(i+1),  'BackgroundColor',iv2_bgcs(11));
+                                pause(0.5);
+                                set(c2bHs(i+1),  'BackgroundColor',iv2_bgcs(0));            end;    end;
+%    
+if any(out<2);                  
+    set(findobj(gcf, 'Tag','iv2_gen_lds_1_1'), 'BackgroundColor',iv2_bgcs(11));
+ 	pause(0.5);
+    set(findobj(gcf, 'Tag','iv2_gen_lds_1_1'), 'BackgroundColor',iv2_bgcs(12));                     end;
+return;
+%%
+
+function                     	local_done_pet_is_2(ud);
+%%
+for i=umo_cstrs(char(ud.pet_is.symbolic_c), '$PET', 'im1');
+ 	set(ud.c1bHs(i+1),  'Style','edit',  'BackgroundColor',iv2_bgcs(6));
+    set(ud.c2bHs(i+1),  'Value',1,  'Style','pushbutton',   'String',ud.pet_is.real_c{i});          end;
+%    
+set(ud.c1bHs(1), 'String','Work on date/time elements as instructed below, if any. Hit > when done');
+set(ud.c2bHs(1), 'String','Done',   'Enable','on');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+	{'* Identify PET-ID segments with date/time elements (in integers). ',   	...
+    '> If identified, hit the GUI and replace integers with  yyyy or yy (year), ', 	...
+    '    mm (month), dd (day), HH (hour), MM (minute), or SS (second).',            ...
+    '  Leave non-date/time elements unchanged. (e.g., pet-yyyymmdd)',               ...
+   	'> Leave PET_ID segments without date/time elements unchanged.',                ...
+    '> Original inputs in right column for your convenience'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+%
+ud.stage                        = 'pet_is_3';
+set(gcf,    'UserData',ud);                                                     
 return;
 %%
 
 function                     	local_done_pet_is_3(ud);
 %%
+set(findobj(gcf, 'Style','edit'),   'Style','pushbutton');
 %
-ud.pet_is.search_c              = local_done_xxx_is_3(ud.pet_is.real_c,ud.pet_is.search_c,ud.c1bHs,'pet');
+clear ss;
+for i=1:1:numel(ud.pet_is.real_c);   
+                                ss{i}                       = '*';                                  end;
 %
-set(ud.c1bHs(1), 'String','For information alone. Review the info board below');
-set(ud.c2bHs(1), 'String','Next',    'CallBack','iv2_gen_lds(''pet_ds'',[]);');
+for i=umo_cstrs(char(ud.pet_is.symbolic_c), '$PET', 'im1');
+    if ~strcmpi(ud.pet_is.real_c{i}, get(ud.c1bHs(i+1), 'String'));
+       	ss{i}                  	= deblank(get(ud.c1bHs(i+1), 'String'));                            end;
+    set(ud.c1bHs(i+1),  'CallBack','iv2_gen_lds(''toggle'',''mri'');');
+    set(ud.c2bHs(i+1),  'String',ud.pet_is.symbolic_c{i}(ud.pet_is.symbolic_c{i}~='$'));            end;
+%    
+ud.pet_is.format_c              = ss;
 %
-ud.stage                        = 'end_pet_is';
-set(gcf, 'UserData',ud)
+out                             = ss{1};
+for i=2:1:numel(ss);            out                         = fullfile(out, ss{i});                 end;
 %
-return
+ud.pet.is.format                = out;
+ud.stage                        = 'pet_is_4';
+set(ud.c1bHs(1), 'String','Hit/highlight path segment(s) as instructed below. Hit > when done');
+set(ud.c2bHs(1), 'String','Approve',    'CallBack','iv2_gen_lds(''done'',[]);');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',                           ...
+	{'* IDAE would like to know if it is possible to narrow down the search for',   ...
+    '  PET source files with one or a few PET_ID segments (light green)',   	...
+    '> Hit a left column GUI of PET-related (mostlikely the one @PET_ID_1)'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+% marking / setting segments with $PET_ID_i$: 
+set(ud.c1bHs(umo_cstrs(char(ud.pet_is.symbolic_c),'$PET', 'im1')+1),    ...
+    'BackgroundColor',iv2_bgcs(6),  'CallBack','iv2_gen_lds(''toggle'',''pet'');');
+set(gcf,    'UserData',ud);
+return;
 %%
 
-function    search_c            = local_done_xxx_is_3(real_c,search_c,c1bHs,pom);
+function                          	local_done_pet_is_4(ud);
 %%
+% just checking if 'search' paths are saved:
+if ~isfield(ud.pet_is,'search_c') || ~isfield(ud.pet.is,'search');                 	return;         end;
 %
-% identifying modified segments (for date of service):
-im1                             = umo_cstrs(char(get(c1bHs(2:numel(real_c)+1), 'String')), ...
-                                                            char(real_c), 'im1');
+set(ud.c1bHs(1), 'String','Done for PET image server! Starting PET data server');  
+set(ud.c2bHs(1), 'String','Start',  'CallBack','iv2_gen_lds(''pet_ds'',0)');
+% reset left & right columns:
+local_reset_guis(ud);
 %
-im1(numel(search_c)+1:end, :)   = 5;
-for i=find(im1'<1);             s1                          = get(c1bHs(i+1), 'String');
-                                s1                          = s1(s1~=' ');
-    if any(s1=='*');            s1c                         = getLseg(replace(s1,'*',' '), [0,2]);
-                                s1x                         = '';
-        for j=1:1:numel(s1c);   s1x                         = [s1x,s1c{j},'*'];                     end
-        if s1(1)=='*';          s1x                         = ['*',s1x];                            end
-        if s1(end)~='*';        s1x                         = s1x(1, 1:end-1);                      end
-                                s1                          = s1x;                                  end
-    search_c{i}                 = ['$',s1,'$'];                                                     end
-%
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',       ...
-	{['* Starting search path for ',upper(pom),' source files (to use when IDAE is up):']
-    ['   ',local_str2cell(search_c)]
-    '  where segments with # and $ will be supplied from the study log file'
-    ['< This is the end of the section of ',upper(pom),' paths in Image server']
-    '* Hit ''Next'' @top-right to start the Data server section'});
+ud.stage                        = 'pet_end';
+set(gcf,    'UserData',ud);
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',                           ...
+    {'* Instructions: ',    ...
+    '> Using file navigator that pops-up, select a PET file in Data server',        ...
+    '  to import a representative PET path in Data server',                         ...
+    '- Easier if the same scan (chosen for image server) is selected. ',            ...
+    ['  (= ',ud.pet.is.real,')']});
 
+return;
+%%
 
 function                        local_reset_guis(ud);
 %%
-set(ud.c1bHs(2:end),    'String',' ',   'Value',1,  'Style','pushbutton',  'UserData',[],    ...
+set(ud.c1bHs(2:end),    'String',' ',   'Value',1,  'Style','pushbutton',   ...
                                 'BackgroundColor',iv2_bgcs(0),  'CallBack',' ', 'Enable','on');
-set(ud.c2bHs(2:end),    'String',' ',   'Value',1,  'Style','pushbutton',  'UserData',[],    ...
+set(ud.c2bHs(2:end),    'String',' ',   'Value',1,  'Style','pushbutton',   ...
                                 'BackgroundColor',iv2_bgcs(0),  'CallBack',' ', 'Enable','on');
 return;
 %%
 
-function                        local_pet_ds(ud);
+function                        local_pet_ds(to_resume);
 %%
-if isempty(ud);                 ud                          = get(gcf, 'UserData');                 end;
-local_reset_guis(ud)
+ud                              = get(gcf,  'UserData');
+set(gco,    'Enable','off');
 %
-ud.pet_ds.real_c                = local_str2cell(ud.pet.ds.real);
-ns                              = numel(ud.pet_ds.real_c);
-% %
+if to_resume>0;                 path_x                      = ud.pet.ds.real;
+else;                           [fname, path_x]           	= uigetfile(fullfile(pwd,'*'));
+    if ~ischar(fname);       	set(gco,    'Enable','on');                         return;         end;
+                                ud.pet.ds.real            	= path_x;                               end;
+%
+if path_x(1)==filesep;          s0                          = filesep;
+else;                           s0                          = '';                                   end;
+%                           
+path_x(path_x==' ')             = '*';
+path_x(path_x==filesep)         = ' ';
+sc                              = getLseg(path_x,   [0,2]);
+%
+% construction of source PET path in a cell array:
+for i=1:1:numel(sc);            sc{i}(sc{i}=='*')           = ' ';                                  end;
+sc{1}                           = [s0,sc{1}];
+%
+ud.pet_ds.real_c                = sc;
+%
 ud.stage                        = 'pet_ds_1';
 %
-% constructing selections
-ss                              = {'fixed', 'Subject ID','Study ID','copy from study Log file'};
-ic                              = numel(ss);
-for i=1:1:numel(ud.pet_is.symbolic_c)
-    ic                          = ic + 1;
-    ss{ic}                      = ['is_seg_',int2str(i),' (',ud.pet_is.real_c{i},')'];              end
-% 
-for i=1:1:ns;
-    set(ud.c1bHs(i+1), 'String',ud.pet_ds.real_c{i});
-    set(ud.c2bHs(i+1), 'Value',1, 'Style','popupmenu', 'String',ss);                                end
-%
-set(ud.c1bHs(1), 'String','Starting the section of PET paths in Data server')
+set(ud.c1bHs(1), 'String','Assign roles / rules to individual PET path segments from left column');
 set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
 %
-set(ud.c1bHs(ns+2),  'String','Want to re-select path? If so, restart >');
-set(ud.c2bHs(ns+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
+set(ud.c1bHs(numel(sc)+2),  'String','Want to re-select path? If so, restart >');
+set(ud.c2bHs(numel(sc)+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
     'ud.stage=''pet_is_4''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'], 'Enable','on');
 %
+s2x                             = {'Select','fixed (=left column)'};
+cc                              = char(ud.pet_is.symbolic_c);
+q                               = ones(1, numel(ud.pet_is.symbolic_c));
+q(:, cc(:,1)=='$')              = 0;
+ic                              = numel(s2x);
+for i=find(q>0);                  
+    ic                          = ic + 1;
+  	s2x{ic}                     = ['= segment_',int2str(i),' (',ud.pet_is.real_c{i},')'];         	end;
+%
+pet                             = find(cc(:,1)=='$' & cc(:,2)=='P');
+for i=find(cc(:,1)'=='$');   
+    ic                          = ic + 1;
+    s2x{ic}                     = ['= ',ud.pet_is.symbolic_c{i}(ud.pet_is.symbolic_c{i}~='$'),   ...
+                                                            ' (',ud.pet_is.real_c{i},')'];
+    ic                          = ic + 1;
+    s2x{ic}                     = ['= ',ud.pet_is.symbolic_c{i}(ud.pet_is.symbolic_c{i}~='$'),   ...
+                                                            ' - modify'];                           end;
+%
 set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-    {'* Segments of user-selected PET-path are shown on left GUIs'
-    '> Select one each from right pulldown menu according to the local path conventions'
-    '  - ''fixed'' to apply the string of left column to all scans' 
-    '  - Subject ID, Study ID, and other items to copy from the study log file'
-    '  - ''is_seg_i'' to make use of Segment i of the Image server path (in parentheses)'
-    '> Review the selections. Hit ''Done'' if all look good'});
+    {'* Selections for path segments (image server examples in ()):',   ...
+    ' fixed (=left column)  :  Common to all subjects/scans',           ...
+    ' = segment_i           :  Copy segment_i of image server path ',           	... 
+    ' = segment_ID          :  Copy Subject_ID / PET_ID_i of image server path ',  	...
+    ' = segment_ID - modify :  Copy Segment_ID with user-defined modifications'},   ...
+                                'FontName','Consolas',  'FontSize',10,  'HorizontalAlignment','left');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+%
+ud.sc_pet_ds                 	= s2x;
+for i=1:1:numel(sc);
+    set(ud.c1bHs(i+1),  'String',sc{i});
+    set(ud.c2bHs(i+1),  'Value',1,  'Style','popupmenu',    'String',s2x,   'Enable','on');         end;
+%
 set(gcf,    'UserData',ud);
 return;
 %%
@@ -409,37 +383,44 @@ return;
 function                     	local_done_pet_ds_1(ud);
 %%
 % unmarking problematic segments, if any:
-% set(ud.c2bHs,   'BackgroundColor',iv2_bgcs(0));     
+set(ud.c2bHs,   'BackgroundColor',iv2_bgcs(0));     
 %
-for i=1:1:numel(ud.pet_ds.real_c);
-    v                           = get(ud.c2bHs(i+1), 'Value');
-    if i==1;                    s0                          = get(ud.c2bHs(i+1), 'String');         end
-    s2{i}                       = s0{v};
-    ss{i}                       = getLseg(s0{v}, 1); 
-    if strncmpi(ss{i},'is_seg_',7);
-        set(ud.c2bHs(i+1), 'Value',1, 'Style','edit', 'String',s0{v}); 
-    else;
-        set(ud.c2bHs(i+1), 'Value',1, 'Style','pushbutton', 'String',s0{v});                end;    end 
+v                               = zeros(numel(ud.pet_ds.real_c), 1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
+% expected PET_ID_i from the image server:
+ic                              = 0;
+for i=umo_cstrs(char(ud.sc_pet_ds), '= PET', 'im1');
+    ic                          = ic + 1;
+    pet_seg{ic}                 = ['= ',getLseg(ud.sc_pet_ds{i}, 2)];                            	end;
+% PET_ID_i may not be applied to more than one PET_ID segment
+cm1                             = umo_cstrs(char(pet_seg), [], 'cm1');
+im1                             = umo_cstrs(char(ud.sc_pet_ds(v)), char(pet_seg(cm1(:,2)>0)), 'im1');
+if size(im1,2)>1;   
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+        {'* Problem! PET_ID_i may not be applied to more than one PET_ID segment (pink)',  	...
+        '> Correct them and hit ''Done'' one more time'});                          
+    for i=find(im1(:,2)>0)';
+        set(ud.c2bHs(im1(i, im1(i,:)>0)+1),  'BackgroundColor',iv2_bgcs(11));                       end;
+                                                                                    return;         end;
+% no PET_ID_i was selected:
+if sum(im1>0)<1;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+        {'* Problem! Select at least one PET_ID_i for PET_ID segments (currently none)',  	...
+        '> Correct them and hit ''Done'' one more time'});                          return;         end;
 %
-% disabling 'restart' GUIs:
-set(ud.c1bHs(numel(ud.pet_ds.real_c)+2), 'Enable','off');
-set(ud.c2bHs(numel(ud.pet_ds.real_c)+2), 'Enable','off');
+
+% the last string for '= PET' is '= PET_ID_last - fit': 
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+    {'* IDAE requests to make PET paths unique to IDAE',           	...
+    '  to avoid over-writing of files by IDAE by chance ',        	...
+    '> Assign ''- modify'' to at least one PET_ID segment',         ...
+    ['  Preferably, to the last PET_ID segment (i.e., ''',getLseg(ud.sc_pet_ds{end},2),''')']});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 %
-%
-set(ud.c1bHs(1), 'String','Work on right GUIs as instructed below')
-set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
-%
-%
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',       ...
-    {'* Modify eligible right GUIs (= editable) per local path conventions'
-    '  or to make resulting paths specific to IDAE, as needed/desired'
-    '  - Prepend/append a string (or both) to is_seg_i'
-    '  - Add * anywhere to specify the modifications later'
-    '  - Replace is_seg_i with a string to use as a fixed segment'
-    '* Do not erase any (i.e., add only) except replacing is_seg_i'});
-%
-ud.pet_ds.is_segs_c             = ss;
-ud.pet_ds.c2_str_c              = s2;
+set(ud.c1bHs(1), 'String','Review / modify selections per instructions below as needed. Then hit > ');
+set(ud.c2bHs(1), 'String','Done');
 ud.stage                        = 'pet_ds_2';
 set(gcf,    'UserData',ud);
 return;
@@ -447,217 +428,252 @@ return;
 
 function                     	local_done_pet_ds_2(ud);
 %%
+v                               = zeros(numel(ud.pet_ds.real_c), 1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
+% % expected PET_ID_i from the image server:
+% ic                              = 0;
+% for i=umo_cstrs(char(ud.sc_pet_ds), '= PET', 'im1');
+%     ic                          = ic + 1;
+%     pet_seg{ic}                 = ['= ',getLseg(ud.sc_pet_ds{i}, 2)];                            	end;
+% % 
+% cm1                             = umo_cstrs(char(pet_seg), [], 'cm1');
+set(ud.c1bHs([1:1:size(v,1)]+1),    'Style','pushbutton',   'BackgroundColor',iv2_bgcs(0));
+
+mmm                             = zeros(size(v));
+for i=umo_cstrs(char(ud.sc_pet_ds(v)), '= PET', 'im1');
+    if size(getLseg(ud.sc_pet_ds{v(i)},3),2)==1;
+        mmm(i, :)             	= getLseg(ud.sc_pet_ds{v(i)},3)=='-';                       end;    end; 
 %
-[ud.pet_ds.symbolic_c, ud.pet_ds.fixSer]                    = local_done_xxx_ds_2(ud,'pet',ud.pet_ds);
+if sum(mmm)<1;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+        {'* Not right! ',  '> Assign ''- modify'' to at least one PET_ID segment',         ...
+        ['  Preferably, to the last PET_ID segment (i.e., ''',getLseg(ud.sc_pet_ds{end},2),''')']});
+                                                                                    return;         end;
+%
+set(ud.c2bHs([1:1:size(v,1)]+1),    'Enable','off');
+drawnow;
+%
+s1                              = {' ','Fix it to a new name across subjects / scans', 	...
+                                    ' ','More complex - define rules later',' '};
+                                    
+for i=find(mmm'>0);
+    s1{1}                       = ['Current: ',ud.pet_ds.real_c{i}];
+    s1{3}                       = ['Append a string to ',getLseg(ud.sc_pet_ds{v(i)},2), ...
+                                                            ' from image server'];
+    s1{5}                       = ['Copy ',getLseg(ud.sc_pet_ds{v(i)},2),' (loophole)'];
+    set(ud.c1bHs(i+1),  'Value',1,  'Style','popupmenu',    'String',s1,    ...
+                                'CallBack','iv2_gen_lds(''repl_seg'',[]);');                        end;
 %
 ud.stage                        = 'pet_ds_3';
 set(gcf,    'UserData',ud);
 %
-return;
-%%
-
-function   [symbolic_c, fixSer] = local_done_xxx_ds_2(ud,pom,xxx_ds);
-%%
+set(ud.c1bHs(1), 'String','Work on popup-menu GUIs on left column as instructed below.');
+set(ud.c2bHs(1), 'String','Done');
 %
-symbolic_c                      = xxx_ds.is_segs_c;
-fixSer                          = umo_cstrs(['fixed ';'is_seg';'Series'],char(xxx_ds.is_segs_c), 'im1');
-% working on 'fixed' segments:
-for i=find(fixSer'==1);
-    set(ud.c1bHs(i+1), 'String',[xxx_ds.real_c{i},' (fixed)']);
-    symbolic_c{i}               = xxx_ds.real_c{i};                                                 end
-%
-% working on study ID, Study subject ID, and others from study log file:
-for i=find(fixSer'<1);
-    sR                          = get(ud.c2bHs(i+1), 'String');
-    if strcmpi(getLseg(sR,1),'copy');
-        set(ud.c1bHs(i+1), 'String',['(to ',sR,')']);
-        symbolic_c{i}           = '#study_log_file#';
-    else;
-        sR(sR==' ')             = '_';
-        set(ud.c1bHs(i+1), 'String', [sR, ' (from study log file)']);
-        symbolic_c{i}           = ['#',sR,'#'];                                             end;    end
-%
-% 
-for i=find(fixSer'==2);
-    sR                          = get(ud.c2bHs(i+1), 'String');
-    xxx_is_str                  = xxx_ds.c2_str_c{i}(1, find(xxx_ds.c2_str_c{i}=='(',1)+1: ...
-                                    find(xxx_ds.c2_str_c{i}==')',1,'last')-1);
-    % to specify modification strings later (more complex)
-    if any(sR=='*');
-        set(ud.c1bHs(i+1), 'String',[xxx_is_str,' (to modify)']);
-        symbolic_c{i}           = ['$',xxx_ds.is_segs_c{i},'$*'];
-    % the eligible string (is_seg_i or Series ID) is replaced by a string: 
-    elseif ~contains(sR,getLseg(xxx_ds.c2_str_c{i},1))
-        set(ud.c1bHs(i+1), 'String',[getLseg(sR,1),' (to fix)']);
-        symbolic_c{i}                             = getLseg(sR,1);
-    % no changes at all:
-    elseif strcmpi(sR(sR~=' '),xxx_ds.c2_str_c{i}(xxx_ds.c2_str_c{i}~=' '));
-        % set(ud.c1bHs(i+1), 'String',[ud.pet_ds.is_segs_c{i},' (to copy)']);
-        set(ud.c1bHs(i+1), 'String',[xxx_is_str,' (as is)']);
-        symbolic_c{i}                           = ['$',xxx_ds.is_segs_c{i},'$'];
-    % prepend/append option:
-    else;
-        if any(sR=='(');        sR(1, find(sR=='(',1):end)  = ' ';                                  end;
-        sR2                     = replace(sR,xxx_ds.is_segs_c{i},' * ');
-        sR2_c                   = getLseg(sR2, [0,2]);
-        if sR2_c{1}(1)=='*';
-            % str                 = [ud.pet_ds.is_segs_c{i},sR2_c{2},' (to modify)'];
-            str                 = [xxx_is_str,sR2_c{2},' (to modify)'];
-            str_2               = ['$',xxx_ds.is_segs_c{i},'$',sR2_c{2}];
-        else;
-            % str                 = [sR2_c{1},xxx_ds.is_segs_c{i}];
-            str                 = [sR2_c{1},xxx_is_str];
-            str_2               = [sR2_c{1},'$',xxx_ds.is_segs_c{i},'$'];
-            if numel(sR2_c)>2;  str                         = [str, sR2_c{3}];             
-                                str_2                       = [str_2, sR2_c{3}];                    end
-            str                 = [str,' (modified)']; 
-            set(ud.c1bHs(i+1), 'String',str)
-            symbolic_c{i}       = str_2;                                            end;    end;    end
-% 
-for i=find(fixSer'==3);
-    sR                          = get(ud.c2bHs(i+1), 'String');
-    sR(sR=='*')                 = ' ';
-    sR2                         = replace(sR,'Series_ID', ' * ');
-    cL                          = sR2(1, 1:find(sR2=='*',1)-1);
-    cR                          = sR2(1, find(sR2=='*',1)+1:end);
-    set(ud.c1bHs(i+1), 'String',[cL(cL~=' '), 'Series_ID', cR(cR~=' '),' (from MRI)']);
-    symbolic_c{i}               = [cL(cL~=' '), '&Series_ID&', cR(cR~=' ')];                        end
-
-% to make revisions feasible
-set(ud.c1bHs(size(fixSer,1)+2), 'String','Not quite right? Revise selections and hit >', 'Enable','on');
-set(ud.c2bHs(size(fixSer,1)+2), 'String','Update', ...
-    'CallBack', ['ud = get(gcf, ''UserData''); iv2_gen_lds(''done_',pom,'_ds_2'',ud);'], 'Enable','on');
+set(ud.c1bHs(size(v,1)+3), 'String','Want to re-select segments to modify? if yes, hit >');
+set(ud.c2bHs(size(v,1)+3), 'String','Re-select',   'CallBack',['ud=get(gcf,''UserData'');', ...
+    'ud.stage=''pet_ds_2''; set(gcf,''UserData'',ud); set(ud.c2bHs,''Enable'',''on'');']);
 %
 set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-    {'* Data server path (left GUIs) that was generated per local path conventions'
-    '  for user-enterd Image server path. Rule smmaries (in parentheses) are:'
-    '  - ''fixed''/''to fix'' to use shown strings for all scans'
-    '  - ''copy'' to obtain the strings from the study log file'
-    '  - ''to modify''/''modified'' to modify ''is_seg_i'' later or as shown here'
-    '> Review them carefully. Hit ''Take'' if all look fine'})
-%
-set(ud.c1bHs(1), 'String',['Generated ',upper(pom),' path segments in Data server (rules).']);
-set(ud.c2bHs(1), 'String','Take', 'Callback','iv2_gen_lds(''done'',[]);');
-%
-%
+    {'* Define modification rules', '> Select a desired rule from pulldown menu',   ...
+    '> Then, enter a string of your chice (no spaces)', '  When all are done hit ''Done'' @top right'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 return;
 %%
 
 function                     	local_done_pet_ds_3(ud);
 %%
 %
-% resetting left & right column GUIs:
-% local_reset_guis(ud)
-local_mri_is(ud)
+set(findobj(gcf, 'Style','edit'),   'Style','pushbutton');
+im1                             = umo_cstrs(char(get(ud.c1bHs, 'Style')), 'popupmenu', 'im1');
+if im1(1)>0;                    
+    set(ud.c1bHs(im1),  'BackgroundColor',iv2_bgcs(11));
+   	pause(0.5);
+ 	set(ud.c1bHs(im1),  'BackgroundColor',iv2_bgcs(0));                             return;         end;
 %
+v                               = zeros(numel(ud.pet_ds.real_c), 1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
+set(ud.c2bHs([1:size(v,1)+2]+1),  	'enable','off');
+
+clear ss;
+for i=1:1:size(v,1);            ss{i}                       = ' ';                                  end;
+%
+imx                             = umo_cstrs(char(ud.sc_pet_ds(v)), ...
+                                  	['fixed'; '= seg'; '= Sub'; '= PET'], 'im1')
+% coping with the cases where ( is still left on the GUI:
+ok                              = 1;
+for i=imx(4, imx(4, :)>0); 
+    sc1                         = getLseg(get(ud.c1bHs(i+1), 'String'), 1);
+    if sc1(1)=='(';             set(ud.c1bHs(i+1),  'BackgroundColor',iv2_bgcs(11));
+                                pause(0.5);
+                                set(ud.c1bHs(i+1),  'BackgroundColor',iv2_bgcs(6));
+                                ok                          = 0;                            end;    end;
+if ok<1;                                                                            return;         end;                                
+% fixed segments:
+for i=imx(1, imx(1, :)>0);      ss{i}                       = ud.pet_ds.real_c{i};                 	end;
+% segment_i:
+for i=imx(2, imx(2, :)>0);      
+    ss{i}                       = ['$',getLseg(ud.sc_pet_ds{v(i)},2),'$'];                          end;
+% subject_ID segment:
+for i=imx(3, imx(3, :)>0); 
+    sc3                         = getLseg(ud.sc_pet_ds{v(i)}, 3);
+    if sc3(1)=='-';
+        ss{i}                   = ['$',getLseg(ud.sc_pet_ds{v(i)}, 2),'-modify$'];
+    else;
+        ss{i}                   = ['$',getLseg(ud.sc_pet_ds{v(i)}, 2),'$'];                 end;    end;
+% PET_ID_i segment:
+for i=imx(4, imx(4, :)>0); 
+    sc3                         = getLseg(ud.sc_pet_ds{v(i)}, 3);
+    if sc3(1)=='-';
+        if get(ud.c1bHs(i+1), 'UserData')==2;
+            sc1                 = get(ud.c1bHs(i+1), 'String');
+            ss{i}               = sc1(sc1~=' ');
+        elseif get(ud.c1bHs(i+1), 'UserData')==3;
+            sc1                 = get(ud.c1bHs(i+1), 'String');
+            ss{i}               = ['$',getLseg(ud.sc_pet_ds{v(i)}, 2),'-modify$',sc1(sc1~=' ')];
+        elseif get(ud.c1bHs(i+1), 'UserData')==4;
+            ss{i}               = ['$',getLseg(ud.sc_pet_ds{v(i)}, 2),'-modify$']; 
+        else;
+            ss{i}               = ['$',getLseg(ud.sc_pet_ds{v(i)}, 2),'$'];                         end;
+    else;
+         ss{i}                  = ['$',getLseg(ud.sc_pet_ds{v(i)}, 2),'$'];                 end;    end;
+%
+ud.pet_ds.symbolic_c            = ss;
+out                             = ss{1};
+for i=2:1:numel(ss);            out                         = fullfile(out, ss{i});                 end;
+ud.pet.ds.symbolic              = out;
+ud.stage                        = 'pet_done';
+set(gcf,    'UserData',ud);
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+    {'* Generalized PET path in data server: ',    ...
+    ['   ',ud.pet.ds.symbolic],  ...
+    ' Segments without $   :   fixed to them across subjects / scans',     ...
+    ' $whatever_ID$        :   to copy $whatever_ID$ from image server',   ...
+    ' $whatever_ID-modify$ :   to copy $whatever_ID$ after modifications', ...
+    ' $whatever_ID$xxx     :   to copy $whatever_ID$ with xxx appended'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+%
+set(ud.c1bHs(1), 'String','Done for PET paths. Observe generalized path in Data server below');
+set(ud.c2bHs(1), 'String','Start MRI');
 return;
+%%
+
+function                     	local_done_pet_done(ud);
+%%
+% reset left & right columns:
+local_reset_guis(ud);
+%
+set(ud.c1bHs(1), 'String','Answer below question and Hit > to select a MRI souce file');
+set(ud.c2bHs(1), 'String','Start',  'CallBack','iv2_gen_lds(''mri_is'',0);');
+%
+set(ud.c1bHs(2), 'String','Confirm if MRI source files in DICOM or Phillips PET/REC format');
+set(ud.c2bHs(2),   'Value',1,  'Style','popupmenu',    'Enable','on',  ...
+                                'String',{'Select','Yes','No, not always'});
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+    {'* Reassurance:',  ' Image server: to provide reconstructed MRI files',         ...
+    ' Data server: to hold input / output files for analyses'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 %%
 
 function                            local_disp(i2);
 %%
 ud                              = get(gcf,  'UserData');
 disp(['> output dxetc4xxx: ',ud.lds]);
+if isfield(ud,'pet');   
+    if isfield(ud.pet,'is');    disp('> PET Path variables - Image server:');
+                                disp(ud.pet.is);                                                  	end;
+    if isfield(ud.pet,'ds');    disp('> PET Path variables - Data server:');
+                                disp(ud.pet.ds);                                          	end;    end;
+%
+if isfield(ud,'mri');   
+    if isfield(ud.mri,'is');    disp('> MRI Path variables - Image server:');
+                                disp(ud.mri.is);                                                  	end;
+    if isfield(ud.mri,'ds');    disp('> MRI Path variables - Data server:');
+                                disp(ud.mri.ds);                                          	end;    end;
 %
 if isfield(ud,'idae');          disp('> IDAE-related Paths');
-                                disp(ud.idae);                                                      end
-if isfield(ud,'pet_is');        disp('> PET Path variables - Image server:');
-                                disp(ud.pet_is);                                                  	end
-if isfield(ud,'pet_ds');        disp('> PET Path variables - Data server:');
-                                disp(ud.pet_ds);                                          	        end
-%
-if isfield(ud,'mri_is');        disp('> MRI Path variables - Image server:');
-                                disp(ud.mri_is);                                                  	end
-if isfield(ud,'mri_ds');        disp('> MRI Path variables - Data server:');
-                                disp(ud.mri_ds);                                          	        end
+                                disp(ud.idae);                                                      end;
 if isfield(ud,'etc');          	disp('> Other critical settings');
-                                disp(ud.etc);                                                       end
+                                disp(ud.etc);                                                       end;
 return;
 %%
 
-% function                     	local_toggle(i2);
-% %%
-% % deselecting gco, if it is selected already:
-% if sum(abs(get(gco, 'BackgroundColor') - iv2_bgcs(18)))<10.^-6;
-%     set(gco, 'BackgroundColor',iv2_bgcs(0));                                        return;         end;
-% %
-% set(gco, 'BackgroundColor',iv2_bgcs(18));
-% %
-% ud                              = get(gcf, 'UserData');
-% % 
-% eval(['nr                       = numel(ud.',i2,'_is.real_c);']);
-% % i2 is eiter pet or mri:
-% i2(:)                           = lower(i2);
-% % disabling C1 GUIs:
-% 
-% set(ud.c1bHs(2:nr+1), 'Enable','off');
-% drawnow;
-% %
-% 
-% %
-% bgcs                            = cell2mat(get(ud.c1bHs, 'BackgroundColor'));
-% bg18                            = iv2_bgcs(18);
-% ii                              = find(sum((bgcs - bg18(ones(size(bgcs,1),1), :)).^2,2)<10^-6)-1;
-% %
-% im1                             = umo_cstrs('fix',char(get(ud.c2bHs(2:max(ii)+1), 'String')), 'im1');
-% im1(ii, :)                      = 1;
-% %
-% sstr                            = '';
-% for i=1:1:max(ii);
-%     if im1(i)>0;                eval(['ss{i}                = ud.',i2,'_is.real_c{i};']);
-%     else;                       ss{i}                       = '*';                                  end
-%     sstr                        = fullfile(sstr,ss{i});                                             end
-% %
-% if eval(['isfield(ud.',i2,'_is,''search_res'')']);
-%     eval(['sss                  = ud.',i2,'_is.search_res;']);
-%     % previously tried:
-%     im1                         = umo_cstrs(char(sss.str),sstr,'im1');
-%     if im1>0;
-%         set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',       ...
-%             {'* Previousely tried search criteria:'
-%                 [' - String          : ',sstr]
-%                 [' - Elapsed time    : ',num2str(sss(im1).etime)]
-%                 [' - # of paths found: ',int2str(sss(im1).n)]
-%                 '> Accept it if # < 20'
-%                 '> Add more segments (max = 2), or try another segment (deselect = hit again)'});
-%         set(ud.c1bHs(2:nr+1), 'Enable','on');                                       return;         end
-%     %
-%     q                           = numel(sss);
-% % when not tried yet:
-% else;                           q                           = 0;                                    end
-% %   
-% %
-% tic;
-% dxs                             = dir(sstr);
-% t1                              = toc;
-% %
-% sss(q+1).str                    = sstr;
-% sss(q+1).etime                  = t1;
-% cm1                             = umo_cstrs(char(dxs.folder),[],'cm1');
-% sss(q+1).n                      = sum(cm1(:,2)>0);
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
-%     {'* Current search criteria:'
-%     [' - String          : ',sstr]
-%     [' - Elapsed time    : ',num2str(sss(q+1).etime,3),' (sec)']
-%     [' - # of paths found: ',int2str(sss(q+1).n)]
-%     '> Accept it if # < 20'
-%     '> Add more segments (max = 2), or try another segment (deselect = hit again)'});
-% %
-% eval(['ud.',i2,'_is.search_res  = sss;']);
-% %
-% set(gcf, 'UserData',ud);
-% %
-% set(ud.c1bHs(2:nr+1), 'Enable','on')
-% set(ud.c2bHs(1), 'Enable','on')
-% %
-% return;
-% %%
+function                     	local_toggle(i2);
+%%
+set(gco,    'Enable','off');
+drawnow;
+if sum((get(gco, 'BackgroundColor') - iv2_bgcs(6)).^2)<10^-6;
+                            	set(gco, 'BackgroundColor',iv2_bgcs(18));
+else;                        	set(gco, 'BackgroundColor',iv2_bgcs(6), 'Enable','on'); 
+                                                                                    return;         end;
+%
+ud                              = get(gcf, 'UserData');
+bgcs                            = cell2mat(get(ud.c1bHs, 'BackgroundColor'));
+bg18                            = iv2_bgcs(18);
+ii                              = find(sum((bgcs - bg18(ones(size(bgcs,1),1), :)).^2,2)<10^-6)-1;
+n                               = length(ii);
+if n<1;                                                                             return;         end;
+if n>2;                         set(gco, 'BackgroundColor',iv2_bgcs(11));
+                                pause(0.5);
+                                set(gco, 'BackgroundColor',iv2_bgcs(6));            return;         end;
+%                            
+eval(['symbolic_c               = ud.',i2,'_is.symbolic_c;']);
+eval(['real_c                   = ud.',i2,'_is.real_c;']);
+%
+jj                              = zeros(2,  max(ii));
+jj(1,   ii)                     = 1;
+jj(2,   umo_cstrs(char(symbolic_c(1:max(ii))), '$', 'im1'))  	= 1;
+ss                            	= symbolic_c(1:max(ii));
+s2                              = ss;
+for i=find(jj(1,:)<1 & jj(2,:)>0);
+                                s2{i}                       = '*';
+                                ss{i}                       = '*';                                  end;
+for i=find(jj(1,:)>0 & jj(2,:)>0);
+                                s2{i}                       = symbolic_c{i};
+                                ss{i}                       = real_c{i};                            end;
+%
+eval(['ud.',i2,'_is.search_c    = s2;']);
+% ud.pet_is.search_c            	= s2;
+ssc                             = ss{1};
+s2c                             = s2{1};
+for i=2:1:numel(s2);            ssc                         = fullfile(ssc, ss{i});
+                                s2c                         = fullfile(s2c, s2{i});                 end;
+% ud.pet.is.search                = s2c;
+eval(['ud.',i2,'.is.search      = s2c;']);
+%
+d                               = dir(fullfile(ssc, '*'));
+cm1                             = umo_cstrs(char(d.folder), [], 'cm1');
+%
+s1                              = {['* current search criteria: ',ssc],     ...    
+                                    ['> ',int2str(sum(cm1(:,2)>0)),' directories to narrow down ',  ...
+                                    'in search of ',upper(i2),' source files']};
+set(gco,    'Enable','on');
+if sum(cm1(:,2)>0)<10;          s1{end+1}                   = '< Good enough! Ok to Approve';
+else;  
+    if n<2;                     s1{end+1}                   = '< not good. Add a segment';
+    else;                       
+        s1{end+1}            	= '< not good. Erase one and add another, if any';
+        s1{end+1}               = '  Or accept current criteria as is';                     end;    end;
+%
+set(gcf,    'UserData',ud);
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',s1); 
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+return;
+%%
 
 function                            local_help(i2);
 %%
-disp(['** Step of: ',get(findobj(gcf, 'Tag','iv2_gen_lds_1_1'), 'String')])
-disp(char(get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String')))
-disp('> (the end)')
+coud                                = get(gco,  'Userdata');
+if isempty(get(gco, 'Userdata'));                                                 	return;         end;
+disp(char(get(gco, 'Userdata')));
 return;
 %%
 
@@ -674,51 +690,55 @@ return;
 function                        local_resume(ud);
 %%
 
-s1{1}                           = 'Resume from?';
+s1{1}                           = 'Resume from (select one):';
 cb{1}                           = ' ';
 %
 im1                             = umo_cstrs(char(fieldnames(ud)), ...
                                     char('idae','pet_is','pet_ds','mri_is','mri_ds','etc'), 'im1');
 % idae has to be present - otherwise start from scratch:
-if im1(1)<1;                    local_done_set_idae(ud);                                 return;         end
+if im1(1)<1;                    local_done_idae_0(ud);                              return;         end;
 %
-s1{end+1}                       = '- Re-enter your home directory in Data Server';
-cb{end+1}                       = 'local_sort_idae(ud);';
+s1{end+1}                       = '- Selection of your home directory in Data Server';
+cb{end+1}                       = ['ud.stage=''idae_1''; ud.reuse.idae=0;',     ...
+                                    'set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'];
 %
-%
-s1{end+1}                       = '- Set IDAE for a new user';
-cb{end+1}                       = ['ud.idae.new_user = ''yes''; ',  ...
-                                    'set(findobj(gcf, ''String'',''Save''),''Enable'',''off''); ',  ...
-                                        'local_sort_idae(ud);'];
-%
-%
-s1{end+1}                       = '- Reselect PET/MRI paths in Image/Data servers';
-cb{end+1}                       = 'local_get_is_ds(ud)';
-%    
+s1{end+1}                       = '- Recoded your home directory in Data Server';
+cb{end+1}                       = ['ud.stage=''idae_1''; ud.reuse.idae=1;',     ...
+                                    'set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'];
 % pet_is is present:
-if im1(2)>0 
+if im1(2)>0;
+    s1{end+1}                 	= '- Selection of a representative PET path in Image Server';
+    cb{end+1}                	= 'iv2_gen_lds(''pet_is'',0);';                                     
     %
-  	s1{end+1}                 	= '- Resume from the section of PET paths in Image Server';
-    cb{end+1}                	= 'local_pet_is(ud);';                                              end
+  	s1{end+1}                 	= '- Recorded PET path in Image Server';
+    cb{end+1}                	= 'iv2_gen_lds(''pet_is'',1);';                                     end;
 % pet_ds is present:
 if im1(3)>0;
+    s1{end+1}                 	= '- Selection of a representative PET path in Data Server';
+    cb{end+1}                	= 'iv2_gen_lds(''pet_ds'',0);';                                     
     %
-  	s1{end+1}                 	= '- Resume from the section of PET paths in Data Server';
-    cb{end+1}                	= 'iv2_gen_lds(''pet_ds'',);';                                      end
+  	s1{end+1}                 	= '- Recorded PET path in Data Server';
+    cb{end+1}                	= 'iv2_gen_lds(''pet_ds'',1);';                                     end;
 % mri_is is present:
 if im1(4)>0;
+    s1{end+1}                 	= '- Selection of a representative MRI path in Image Server';
+    cb{end+1}                	= ['ud.stage=''pet_done''; ',    ...
+                                    'set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'];
     %
-  	s1{end+1}                 	= '- Resume from the section of MRI paths in Image Server';
-    cb{end+1}                	= 'local_mri_is(ud);';                                              end
+  	s1{end+1}                 	= '- Recorded MRI path in Image Server';
+    cb{end+1}                	= 'iv2_gen_lds(''mri_is'',1);';                                     end;
 % mri_ds is present:
 if im1(5)>0;
+    s1{end+1}                 	= '- Selection of a representative MRI path in Data Server';
+    cb{end+1}                	= 'iv2_gen_lds(''mri_ds'',0);';                                     
     %
-  	s1{end+1}                 	= '- Resume from the section of MRI paths in Data Server';
-    cb{end+1}                	= 'local_mri_ds(ud);';                                              end
+  	s1{end+1}                 	= '- Recorded MRI path in Data Server';
+    cb{end+1}                	= 'iv2_gen_lds(''mri_ds'',1);';                                     end;
 % etc is recorded:
 if im1(6)>0;
-    s1{end+1}                 	= '- Resume from the section of SPM12 & Freesurfer';
-    cb{end+1}                	= 'local_sort_etc(ud)';                                             end
+    s1{end+1}                 	= '- The last section (SPM12 etc)';
+    cb{end+1}                	= ['ud.stage=''mri_ds_done''; ',    ...
+                                    'set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'];         end;
 %
 set(ud.c1bHs(end),  'Value',1,  'Style','popupmenu',    'String',s1,    'UserData',cb,  ...
                                 'CallBack','iv2_gen_lds(''resume_doit'',[]);');
@@ -738,83 +758,136 @@ return;
 
 %% MRI_is
 
-function                        local_mri_is(ud);
+function                        local_mri_is(to_resume);
 %%
+ud                              = get(gcf,  'UserData');
+set(gco,    'Enable','off');
 %
-if isempty(ud);                 ud                          = get(gcf, 'UserData');                 end;
-local_reset_guis(ud);
-% 
-ud.mri_is.real_c                = local_str2cell(ud.mri.is.real);
-ns                              = numel(ud.mri_is.real_c);
+if to_resume>0;                 path_x                      = ud.mri.is.real;
+else;
+    % making sure that MRI source files are in DICOM or PAR/REC format:   
+    v                         	= 0;
+    v(:)                        = local_check_res(v, ud.c2bHs);
+    if any(v<2);                                                                    return;         end;
+    if v(1)>2;
+        set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+            {'* Problem! IDAE cannot hundle other formats than DICOM or PAR/REC format', 	...
+            '> Save current variables (Hit ''Save'') and exit',     ...
+            '> Report the problem to IDAE team (See the IDAE site in GitHub)'});  return;         end;
+    %
+    [fname, path_x]           	= uigetfile(fullfile(ud.pet.is.real,'*'));
+    if ~ischar(fname);       	set(gco,    'Enable','on');                         return;         end;
+                                ud.mri.is.real            	= path_x;                               end;
+%
+if path_x(1)==filesep;          s0                          = filesep;
+else;                           s0                          = '';                                   end;
+%                           
+path_x(path_x==' ')             = '*';
+path_x(path_x==filesep)         = ' ';
+sc                              = getLseg(path_x,   [0,2]);
 %
 % construction of source PET path in a cell array:
-for i=1:1:ns            
-    set(ud.c1bHs(i+1), 'String',ud.mri_is.real_c{i});
-    set(ud.c2bHs(i+1), 'String',['seg_',int2str(i)], 'CallBack','iv2_gen_lds(''toggle_mri'',[]);'); end
-
+for i=1:1:numel(sc);            sc{i}(sc{i}=='*')           = ' ';                                  end;
+sc{1}                           = [s0,sc{1}];
 %
-set(ud.c1bHs(1), 'String','Starting the section of MRI paths in Image server');
-set(ud.c2bHs(1), 'String','Done',  'CallBack','iv2_gen_lds(''done'',[]);')  % 'Enable','off')
+ud.mri_is.real_c                = sc;
 %
-set(ud.c1bHs(ns+2),  'String','Want to re-select example MRI path? If yes, hit >');
-set(ud.c2bHs(ns+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
+ud.stage                        = 'mri_is_1';
+%
+set(ud.c1bHs(1), 'String','Assign roles / rules to individual MRI path setments from right menu');
+set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
+%
+set(ud.c1bHs(numel(sc)+2),  'String','Want to re-select example MRI path? If yes, hit >');
+set(ud.c2bHs(numel(sc)+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
     'ud.stage=''pet_done''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);']);
 %
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'FontName','Consolas', 'FontSize',10,  ... 
-    'HorizontalAlignment','left', 'String',     ...
-    {'* MRI path segments (left) and segment #s (right) are shown.'
-    '> Identify the following segments (hit right-column GUIs; toggles): '
-    '  1. fixed segments that apply for all subjects/scans, and'
-    '  2. MRI series folder (the one that is most relevant to MRI series)'
-    '> Hit ''Done'' when all look OK'})
-ud.stage                        = 'mri_is_1';
+s2x                             = {'Select','fixed (=left column)','variable',  ...
+                                                            'Subject_ID','MRI_ID','Series_ID'};
+ud.sc_mri_is                  	= s2x;
+s2e                             = {' ','Common to all subjects/scans',     ...
+                                    'To vary across subjects/scans',                    ...
+                                    'Subject folder, if any','Segments specific to MRI scans',  ...
+                                    'MRI series folder (special MRI folder), if any'};
+s1{1}                           = '* Selections for path segments:';
+s1c1                            = char(s2x(2:end));
+s1c2                            = char(s2e(2:end));
+for i=1:1:size(s1c1,1);         s1{i+1}                     = [' ',s1c1(i, :),'  : ',s1c2(i, :)];  	end;
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',s1,    'FontName','Consolas',  ...
+                                'FontSize',10,  'HorizontalAlignment','left')
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'),    'UserData',s1);
+% dispCharArrays(1,char(s2x(2:end)),3,char(s2e(2:end)));
+% disp('< end list');
+for i=1:1:numel(sc);
+    set(ud.c1bHs(i+1),  'String',sc{i});
+    set(ud.c2bHs(i+1),  'Value',1,  'Style','popupmenu',    'String',s2x,   'Enable','on');      	end;
+%
 set(gcf,    'UserData',ud);
 return;
 %%
 
 function                        local_done_mri_is_1(ud);
 %%
-[symbolic_c, search_c]          = local_done_xxx_is_1(ud.mri_is.real_c,ud.c1bHs,ud.c2bHs);
+v                               = zeros(numel(ud.mri_is.real_c),    1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
 %
-if isempty(symbolic_c);
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String',  ...
-        {'* Incomplete responses'
-    '> Identify the following segments (hit right-column GUIs; toggles): '
-    '  1. fixed segments that apply for all subjects/scans, and'
-    '  2. MRI series folder (the one that is most relevant to MRI series)'});       return;         end
+im1                             = umo_cstrs(char(ud.sc_mri_is), ['fix';'var';'Sub';'MRI';'Ser'], 'im1');
 %
-% removing callback from right column GUIs:
-set(ud.c2bHs(2:numel(symbolic_c)+1), 'CallBack',' ');
+if ~any(v'==im1(4));
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+        {'* Problem! IDAE cannot hundle cases without MRI_ID segments',         ...
+        '  Review segments (or folders listed in left column) carefully',       ...
+        '  See the manual for further information'});                            	return;         end;
 %
-ud.mri_is.symbolic_c            = symbolic_c;
-ud.mri_is.search_c              = search_c;
-ud.mri.is.symbolic              = local_str2cell(symbolic_c);
-
-local_done_mri_is_2(ud);
+clear ss;
+for i=1:1:size(v,1);            ss{i}                       = ' ';                                  end;
 %
-return
-%%
-
-function                        local_toggle_mri(i2);
-%%
-set(findobj(gcf, 'Tag','iv2_gen_lds_1_2'), 'Enable','on')
-if strncmpi(get(gco,'String'),'seg',3);
-    set(gco, 'String','fixed', 'BackgroundColor',iv2_bgcs(18));                     return;   
-elseif strncmpi(get(gco,'String'),'fix',3);
-    set(gco, 'String','Series folder', 'BackgroundColor',iv2_bgcs(16));             return;         end;
+for i=find(v'==im1(1));         ss{i}                       = ud.mri_is.real_c{i};                  end;
+for i=find(v'==im1(2));         ss{i}                       = '*';                                  end;
+for i=find(v'==im1(3));         ss{i}                       = '$Subject_ID$';                     	end;
+ic                              = 0;
+for i=find(v'==im1(4));         ic                          = ic + 1;
+                                ss{i}                       = ['$MRI_ID_',int2str(ic),'$'];         end;
+for i=find(v'==im1(5));         ss{i}                       = '$Series_ID$';                       	end;                   
 %
-s0                              = get(gco, 'Tag');
-s1                              = find(s0=='_',2, 'last');
-set(gco, 'String',['seg_',int2str(str2num(s0(s1(1)+1:s1(2)-1))-1)], 'BackgroundColor',iv2_bgcs(0));
+ud.mri_is.symbolic_c            = ss;
+%
+ddd                             = ss{1};
+for i=2:1:numel(ss);            ddd                         = fullfile(ddd, ss{i});                 end;
+ud.mri.is.symbolic              = ddd;
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+	{'* Generalized MRI path for image server:',[' ',ddd],'> hit ''Display'' to view more'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+ud.stage                        = 'mri_is_2';
+set(gcf,    'UserData',ud);
+set(ud.c1bHs(1), 'String','Done! Review info board below. Hit > to move on');
+set(ud.c2bHs(1), 'String','Move on')
+set(ud.c2bHs(2:end),    'Enable','off');
 return;
 %%
 
 function                        local_done_mri_is_2(ud);
-%% 
-local_done_xxx_is_2(ud.c1bHs,'mri')
 %
+im1                             = umo_cstrs(char(ud.mri_is.symbolic_c), ['$MRI';'$Ser'], 'im1');
+%
+for i=sort(im1(im1>0))';
+ 	set(ud.c1bHs(i+1),  'Style','edit',  'BackgroundColor',iv2_bgcs(6));
+    set(ud.c2bHs(i+1),  'Value',1,  'Style','pushbutton',   'String',ud.mri_is.real_c{i});          end;
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+	{'* Identify MRI-related segments with date/time elements (in integers). ',   	...
+    '> If identified, hit the GUI and replace integers with  yyyy or yy (year), ', 	...
+    '    mm (month), dd (day), HH (hour), MM (minute), or SS (second).',            ...
+    '    Leave non-date/time elements unchanged. (e.g., yyyy-mm-dd_MRI)',           ...
+   	'  Leave PET_ID segments without date/time elements unchanged.'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+% 
+set(ud.c1bHs(1), 'String','Work on date/time elements as instructed below, if any. Then, hit >');
 set(ud.c2bHs(1), 'String','Done');
-%
 ud.stage                        = 'mri_is_3';
 set(gcf,    'UserData',ud);
 return;
@@ -822,63 +895,115 @@ return;
 
 function                        local_done_mri_is_3(ud);
 %%
+set(findobj(gcf, 'Style','edit'),   'Style','pushbutton');
 %
-ud.mri_is.search_c              = local_done_xxx_is_3(ud.mri_is.real_c,ud.mri_is.search_c,ud.c1bHs,'mri');
+clear ss;
+for i=1:1:numel(ud.mri_is.real_c);   
+                                ss{i}                       = '*';                                  end;
 %
-set(ud.c1bHs(1), 'String','For information alone. Review the info board below');
-set(ud.c2bHs(1), 'String','Next',    'CallBack','iv2_gen_lds(''mri_ds'',[]);');
+im1                             = umo_cstrs(char(ud.mri_is.symbolic_c), ['$MRI';'$Ser'], 'im1');
+for i=sort(im1(im1>0))';
+    if ~strcmpi(ud.mri_is.real_c{i}, get(ud.c1bHs(i+1), 'String'));
+       	ss{i}                  	= deblank(get(ud.c1bHs(i+1), 'String'));                            end;
+    set(ud.c1bHs(i+1),  'CallBack','iv2_gen_lds(''toggle'',''mri'');');
+    set(ud.c2bHs(i+1),  'String',ud.mri_is.symbolic_c{i}(ud.mri_is.symbolic_c{i}~='$'));            end;
+%    
+ud.mri_is.format_c              = ss;
 %
-ud.stage                        = 'end_mri_is';
-set(gcf, 'UserData',ud)
+out                             = ss{1};
+for i=2:1:numel(ss);            out                         = fullfile(out, ss{i});                 end;
 %
+ud.mri.is.format                = out;
+ud.stage                        = 'mri_is_done';
+set(ud.c1bHs(1), 'String','Hit/highlight path segment(s) as instructed below. Hit > when done');
+set(ud.c2bHs(1), 'String','Approve',    'CallBack','iv2_gen_lds(''done'',[]);');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',                           ...
+	{'* IDAE would like to know if it is possible to narrow down the search for',   ...
+    '  MRI source files with one or a few MRI-related segments (light green)',   	...
+    '> Hit a left column GUI of MRI-related (start from @MRI_ID_1)'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+% 
+set(gcf,    'UserData',ud);
 return;
 %%
 
-function                        local_mri_ds(ud);
+function                        local_done_mri_is_done(ud);
 %%
-if isempty(ud);                 ud                          = get(gcf, 'UserData');                 end
-% set(gco,    'Enable','off');
+% just checking if 'search' paths are saved:
+if ~isfield(ud.mri_is,'search_c') || ~isfield(ud.mri.is,'search');                 	return;         end;
 %
-local_reset_guis(ud)
-
-ud.mri_ds.real_c                = local_path2sc(ud.mri.ds.real);
-ns                              = numel(ud.mri_ds.real_c);
-
+set(ud.c1bHs(1), 'String','Done for MRI image server! Let''s work on MRI data server');  
+set(ud.c2bHs(1), 'String','Start',  'CallBack','iv2_gen_lds(''mri_ds'',0)');
+% reset left & right columns:
+local_reset_guis(ud);
 %
-% constructing selections
-ss                              = {'fixed', 'Subject ID','Study ID','copy from study Log file'};
+ud.stage                        = 'mri_is_end';
+set(gcf,    'UserData',ud);
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',                                   ...
+    {'* Instructions: ',    ...
+    '> Using file navigator that pops-up, select a MRI file in data server',    ...
+    '  to get a representative MRI path to work with', 	...
+  	'- Easier if the same scan (chosen for image server) is selected. ',               ...
+  	['  (',ud.mri.is.real,')']});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+return;
+%%
 
-ic                              = numel(ss);
-for i=1:1:ns
+
+function                        local_mri_ds(to_resume);
+%%
+ud                              = get(gcf,  'UserData');
+set(gco,    'Enable','off');
+%
+if to_resume<1;                 [fname, ud.mri.ds.real]   	= uigetfile(fullfile(ud.pet.ds.real,'*'));
+    if ~ischar(fname);       	set(gco,    'Enable','on');                         return;         end;
+                                                                                                    end;
+%
+sc                              = local_path2sc(ud.mri.ds.real);
+ud.mri_ds.real_c                = sc;
+%
+set(ud.c1bHs(1), 'String','Assign definition rules to individual MRI Path segments from right column') 
+set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on');
+%
+set(ud.c1bHs(numel(sc)+2),  'String','Want to reselect example path? If yes, restart >');
+set(ud.c2bHs(numel(sc)+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
+    'ud.stage=''mri_is_done''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'], 'Enable','on');
+%
+s2x                             = {'Select','fixed (=left column)'};
+cc                              = char(ud.mri_is.symbolic_c);
+q                               = ones(1, numel(ud.mri_is.symbolic_c));
+q(:, cc(:,1)=='$')              = 0;
+ic                              = numel(s2x);
+for i=find(q>0);                  
     ic                          = ic + 1;
-    ss{ic}                      = ['is_seg_',int2str(i),' (',ud.mri_is.real_c{i},')'];              end
-% 
-for i=1:1:ns-1;
-    set(ud.c1bHs(i+1), 'String',ud.mri_ds.real_c{i}, ...
-        'Callback','set(findobj(gcf, ''Tag'',''iv2_gen_lds_1_2''),''Enable'',''on'');');
-    set(ud.c2bHs(i+1), 'Value',1, 'Style','popupmenu', 'String',ss);                                end
+  	s2x{ic}                     = ['= segment_',int2str(i),' (',ud.mri_is.real_c{i},')'];         	end;
 %
-set(ud.c1bHs(ns+1), 'String',ud.mri_ds.real_c{ns});
-set(ud.c2bHs(ns+1), 'String','Series_ID', 'BackgroundColor',iv2_bgcs(16));   
-%
-%
-set(ud.c1bHs(1), 'String','Starting the section of MRI paths in Data server')
-set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
-%
-set(ud.c1bHs(ns+2),  'String','Want to re-select path? If so, restart >');
-set(ud.c2bHs(ns+2),  'String','Restart', 'CallBack',['ud=get(gcf,''UserData''); ',   ...
-    'ud.stage=''mri_is_4''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);'], 'Enable','on');
+for i=find(cc(:,1)'=='$');   
+    ic                          = ic + 1;
+    s2x{ic}                     = ['= ',ud.mri_is.symbolic_c{i}(ud.mri_is.symbolic_c{i}~='$'),   ...
+                                                            ' (',ud.mri_is.real_c{i},')'];
+    ic                          = ic + 1;
+    s2x{ic}                     = ['= ',ud.mri_is.symbolic_c{i}(ud.mri_is.symbolic_c{i}~='$'),   ...
+                                                            ' - modify'];                           end;
 %
 set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-    {'* Segments of user-selected MRI path in Data server are shown on left'
-    '> Select one each from right pulldown menu per your path conventions '
-    '  - ''fixed'' to apply the left-column string for all scans' 
-    '  - Subject ID, Study ID, and other items to copy from the study log file'
-    '  - ''is_seg_i'' to make use of Segment i of the Image server path (in parentheses)'
-    '* The last segment is MRI Series ID in IDAE (prepend/append later if desired)'
-    '> Review the selections. Hit ''Done'' if all look good'},  ...
+    {'* Definitions of the selections (image server examples in ()):',   ...
+    ' fixed (=left column)  :  Common to all subjects / scans',        	...
+    ' = segment_i           :  Copy segment_i of image server path ',               ... 
+    ' = segment_ID          :  Copy Subject/MRI/Series_ID of image server path ',  	...
+    ' = segment_ID - modify :  Copy Segment_ID after user-defined modifications'},  ...
                                 'FontName','Consolas',  'FontSize',10,  'HorizontalAlignment','left');
 %
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+%
+ud.sc_mri_ds                 	= s2x;
+for i=1:1:numel(sc);
+    set(ud.c1bHs(i+1),  'String',sc{i});
+    set(ud.c2bHs(i+1),  'Value',1,  'Style','popupmenu',    'String',s2x,   'Enable','on');         end;
 %
 ud.stage                        = 'mri_ds_1';
 set(gcf,    'UserData',ud);
@@ -887,45 +1012,28 @@ return;
 
 function                     	local_done_mri_ds_1(ud);
 %%
+% unmarking problematic segments, if any:
+set(ud.c2bHs,   'BackgroundColor',iv2_bgcs(0));     
 %
-for i=1:1:numel(ud.mri_ds.real_c)-1;
-    v                           = get(ud.c2bHs(i+1), 'Value');
-    if i==1;                    s0                          = get(ud.c2bHs(i+1), 'String');         end
-    s2{i}                       = s0{v};
-    ss{i}                       = getLseg(s0{v}, 1); 
-    if strncmpi(ss{i},'is_seg_',7);
-        set(ud.c2bHs(i+1), 'Value',1, 'Style','edit', 'String',s0{v}); 
-    else;
-        set(ud.c2bHs(i+1), 'Value',1, 'Style','pushbutton', 'String',s0{v});                end;    end 
+v                               = zeros(numel(ud.mri_ds.real_c), 1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
+% checking if MRI_ID_i / Series_ID are properly selected:
+im1                             = local_check_mri_ids(ud,v);
+if isempty(im1);                                                                    return;         end;
+% 
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+    {'* IDAE requests to make MRI paths unique to IDAE',           	...
+    '  to avoid over-writing of files by IDAE by chance ',        	...
+    '> Assign ''- modify'' to at least one of MRI_ID_i or Series_ID', ...
+    '  to go with user-defined rules (to specify later)'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 %
-% series ID GUI
-i                               = i + 1;
-set(ud.c2bHs(i+1), 'Value',1, 'Style','edit'); 
-s2{i}                           = 'Series_ID';
-ss{i}                           = 'Series_ID';
-%
-% disabling 'restart' GUIs:
-set(ud.c1bHs(numel(ud.mri_ds.real_c)+2), 'Enable','off');
-set(ud.c2bHs(numel(ud.mri_ds.real_c)+2), 'Enable','off');
-%
-%
-set(ud.c1bHs(1), 'String','Selections of right-column GUIs are confired')
-set(ud.c2bHs(1), 'String','Done',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','on')
-%
-%
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',       ...
-    {'* Modify eligible right GUIs (= editable) per local path conventions '
-    '  or to make resulting paths specifit to IDAE, as needed/desired'
-    '- Preprend/append a string (or both) to is_seg_i or Series ID'
-    '- Add * anywhere to specify modification rules later'
-    '- Replace is_seg_i with a string to apply for all scans '
-    '* Do not erase any (i.e., add only) except replacing is_seg_i'});
-%
-ud.mri_ds.is_segs_c             = ss;
-ud.mri_ds.c2_str_c              = s2;
+set(ud.c1bHs(1), 'String','Review / modify selections per instructions below as needed. Then, hit > ');
+set(ud.c2bHs(1), 'String','Done');
 ud.stage                        = 'mri_ds_2';
 set(gcf,    'UserData',ud);
-% 
 return;
 %%
 
@@ -957,22 +1065,62 @@ return;
 
 function                     	local_done_mri_ds_2(ud);
 %%
+v                               = zeros(numel(ud.mri_ds.real_c), 1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
+% 
+% checking if MRI_ID_i / Series_ID are properly selected:
+im1                             = umo_cstrs(char(ud.sc_mri_ds(v)), ['= MRI';'= Ser'], 'im1');
+v2                              = zeros(size(v));
+v2(im1(im1>0))                  = 1;
+for i=im1(im1>0)';              s3                          = getLseg(ud.sc_mri_ds{v(i)},3);
+                                v2(i,   :)                  = s3(1)=='-';                           end;
+% - modify not found @MRI_ID_i / Series_ID:
+if sum(v2)<1;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',               ...
+        {'* Assign ''- modify'' to at least one MRI_ID_i or Series_ID',    	...
+        '  to make PET paths in Data server unique to IDAE',                ...
+        '> Correct selections and hit ''Done'' (top right) one more time'});
+    % blinking:
+    for i=im1(im1>0)';          set(ud.c2bHs(i+1),  'BackgroundColor',iv2_bgcs(11));
+                                pause(0.5);
+                                set(ud.c2bHs(i+1),  'BackgroundColor',iv2_bgcs(0));                 end;
+                                                                                    return;         end;
 %
-[ud.mri_ds.symbolic_c, ud.mri_ds.fixSer]                    = local_done_xxx_ds_2(ud,'mri',ud.mri_ds);
+for i=1:1:size(v,1);
+    set(ud.c1bHs(i+1),  'Value',1,  'Style','pushbutton',   'String',ud.mri_ds.real_c{i},   ...
+                                                            'BackgroundColor',iv2_bgcs(0));         end;
+set(ud.c2bHs([1:1:size(v,1)]+1),    'Enable','off');
+drawnow;
+%
+s1                              = {' ','Fix it to a new name across subjects / scans', 	...
+                                    ' ','More complex - define rules later',' '};
+for i=find(v2'>0);
+    s1{1}                       = ['Current: ',ud.mri_ds.real_c{i}];
+    s1{3}                       = ['Append a string to ',getLseg(ud.sc_mri_ds{v(i)},2), ...
+                                                            ' from image server'];
+    s1{5}                       = ['Copy ',getLseg(ud.sc_mri_ds{v(i)},2),               ...
+                                                            ' from image server (loophole)'];
+    set(ud.c1bHs(i+1),  'Value',1,  'Style','popupmenu',    'String',s1,    ...
+                                'CallBack','iv2_gen_lds(''repl_seg'',[]);');                        end;
+%
+set(ud.c1bHs(1), 'String','Work on MRI segments with pop-up menu (left column)');
+set(ud.c2bHs(1), 'String','Done',   'CallBack','iv2_gen_lds(''done'',[]);');
+%
+set(ud.c1bHs(size(v,1)+3), 'String','Want to re-select segments to modify? if yes, hit >');
+set(ud.c2bHs(size(v,1)+3), 'String','Re-select',   'CallBack',['ud=get(gcf,''UserData'');', ...
+    'ud.stage=''mri_ds_1''; set(gcf,''UserData'',ud); set(ud.c2bHs,''Enable'',''on'');']);
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+    {'* Define modification rules', '> Select a desired rule from pulldown menu',   ...
+    '> Then, enter the input', '  When all are done hit ''Done'' @top right'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 %
 ud.stage                        = 'mri_ds_3';
 set(gcf,    'UserData',ud);
 return;
 %%
-
-function                     	local_done_mri_ds_3(ud);
-%%
-%
-local_sort_etc(ud);
-%
-return;
-%%
-
 
 function                        local_repl_seg(i2);
 %%
@@ -993,73 +1141,88 @@ else;
 return;
 %%
 
+function                     	local_done_mri_ds_3(ud);
+%%
+v                               = zeros(numel(ud.mri_ds.real_c), 1);
+v(:)                            = local_check_res(v, ud.c2bHs);
+if any(v<2);                                                                        return;         end;
+%
+% disp(char(ud.sc_mri_ds(v(im1(im1>0)))))
+for i=1:1:size(v,1);            ss{i}                       = ' ';                                  end;
+imx                             = umo_cstrs(char(ud.sc_mri_ds(v)),    ...
+                                  	['fixed';'= seg';'= Sub';'= MRI';'= Ser'],  'im1');
+%
+for i=1:1:size(v,1);            ss{i}                       = ' ';                                  end;
+% fixed:
+for i=imx(1, imx(1, :)>0);      ss{i}                       = ud.mri_ds.real_c{i};                  end;
+% segments from image server:
+for i=imx(2, imx(2, :)>0);      
+    ss{i}                       = ['$',getLseg(ud.sc_mri_ds{v(i)},2),'$'];                          end;
+% Subject_ID field:
+for i=imx(3, imx(3, :)>0);
+    s3                          = getLseg(ud.sc_mri_ds{v(i)}, 3);
+    if s3(1)=='-';              
+        ss{i}                 	= ['$',getLseg(ud.sc_mri_ds{v(i)},2),'-modify$'];   
+    else;
+         ss{i}                 	= ['$',getLseg(ud.sc_mri_ds{v(i)},2),'$'];                  end;    end;
+%
+imy                             = imx(4:end,    :);
+for i=imy(imy(:)>0)';
+    s3                          = getLseg(ud.sc_mri_ds{v(i)}, 3);
+    if s3(1)=='-';
+        if get(ud.c1bHs(i+1), 'UserData')==2;
+            sc1                 = get(ud.c1bHs(i+1), 'String');
+            ss{i}               = sc1(sc1~=' ');
+        elseif get(ud.c1bHs(i+1), 'UserData')==3;
+            sc1                 = get(ud.c1bHs(i+1), 'String');
+            ss{i}               = ['$',getLseg(ud.sc_mri_ds{v(i)},2),'$',sc1(sc1~=' ')];
+        else;       
+            ss{i}             	= ['$',getLseg(ud.sc_mri_ds{v(i)},2),'-modify$'];                   end;     
+    else;                   
+         ss{i}                 	= ['$',getLseg(ud.sc_mri_ds{v(i)},2),'$'];                  end;    end;
+%
+ud.mri_ds.symbolic_c            = ss;
+out                             = ss{1};
+for i=2:1:size(v,1);            out                         = fullfile(out, ss{i});                 end;
+%
+ud.mri.ds.symbolic              = out;
+ud.stage                        = 'mri_ds_done';
+set(gcf,    'UserData',ud);
+%
+set(ud.c1bHs(1), 'String','Review generalized MRI path in Data server @info-board');
+set(ud.c2bHs(1), 'String','Move on');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+    {'* Generalized MRI path in Data server:',  ['   ',ud.mri.ds.symbolic],  ...     
+    ' Segments without $   :   fixed to them across subjects / scans',     ...
+    ' $whatever_ID$        :   to copy $whatever_ID$ from image server',   ...
+    ' $whatever_ID-modify$ :   to copy $whatever_ID$ after modifications', ...
+    ' $whatever_ID$xxx     :   to copy $whatever_ID$ with xxx appended'});
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+return;
+%%
 
-function                     	local_done_set_idae(ud);
+function                     	local_done_idae_0(ud);
 %%
 %
-sss                             = {'user_name','user_home','real'};
-bNos                            = 8:2:12;
-im1                             = umo_cstrs(char(fieldnames(ud.idae)), char(sss), 'im1');
-if any(im1<1);
-    set(ud.c1bHs(bNos(find(im1'<1,1))), 'BackgroundColor',iv2_bgcs(11));
-    pause(0.5)
-    set(ud.c1bHs(bNos(find(im1'<1,1))), 'BackgroundColor',iv2_bgcs(0));
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-        {'* Incomplete entry found (blinked in pink).'
-        ' - Hit associated right GUI and complete the left GUI'});                  return;         end
+% reset left & right columns:
+local_reset_guis(ud);
 %
-if ~isfield(ud.idae,'new_user');
-    [idx, unm2]                 = fileparts(ud.idae.user_home);
-    if ~strcmpi(ud.idae.user_name, unm2)
-        set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-            {'* Critical Problem! ' 
-            ' - The last segment of your home directory not identical to your username ' 
-            '* IDAE cannot not function with this problem' 
-            '> Create a folder in Data server to hold all user''s user folders for IDAE'})
-                                                                                    return;         end
-                                                                                                    end
+set(ud.c1bHs(1), 'String','Follow instructions below.  Then, hit > ');
+set(ud.c2bHs(1), 'String','Start',   'CallBack','iv2_gen_lds(''done'',[]);');
 %
-% sorting out variables of ud.idae:
-if isfield(ud.idae,'new_user');
-    ud.idae.user_home           = fullfile(fileparts(ud.idae.user_home),ud.idae.user_name);
-    ud.idae.real                = fullfile(ud.idae.user_home, 'iv2');                               end
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',       ...
+    {'* Let''s create a folder to place files to run IDAE (analysis packages, etc.)', ...
+    '> Select a file in your home directory in Data Server',    ...
+    '  (your home directory usually ends with your username)'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 %
-ud.idae.real_c                  = local_str2cell(ud.idae.real);
-ud.idae.symbolic                = fullfile(fileparts(ud.idae.user_home),'$User_ID$','iv2');
-ud.idae.symbolic_c              = local_str2cell(ud.idae.symbolic);
-%
-% creating idae's home directory and subdirectories and
-%   creating the files needed for performance of IDAE
-%
-if ~exist(ud.idae.real,'dir');  mkdir(ud.idae.real);                                                end;
-%
-d2mk                            = {'fs_scripts','tmp'};
-for i=1:1:numel(d2mk);
-    if ~exist(fullfile(ud.idae.real,d2mk{i}),'dir');
-                                mkdir(fullfile(ud.idae.real,d2mk{i}));                      end;    end
-%
-f2mk                            = {'FS_done.txt','FS_submitted.txt'};
-for i=1:1:numel(f2mk);
-    if ~exist(fullfile(ud.idae.real,d2mk{1},f2mk{i}),'file');
-        write2ptf(fullfile(ud.idae.real,d2mk{1},f2mk{i}), 'symbolic');                      end;    end
-%
-if ~exist(fullfile(ud.idae.real,d2mk{2},'scratch.m'),'file');
-    write2ptf(fullfile(ud.idae.real,d2mk{2},'scratch.m'), 'symbolic');                              end
-%
-% start_IDAE.m to make IDAE codes available to the user
-% 
-if ~exist(fullfile(ud.idae.user_home,'start_IDAE.m'),'file');
-    write2ptf(fullfile(ud.idae.user_home,'start_IDAE.m'),     ...
-        ['% this file adds paths of IDAE codes',10, ...
-        'addpath ',ud.idae.code_path,' -begin',10, ...
-        'addpath ',fullfile(ud.idae.real,d2mk{2}),' -begin']);                                      end
-%
-set(gcf, 'UserData',ud);
-%
-if isfield(ud.idae,'new_user'); local_sort_etc(ud);                                 return;         end
-
-local_get_is_ds(ud);
-return;
+ud.stage                        = 'idae_1';
+set(gcf,    'UserData',ud);
+return
 %%
 
 function    sc                  = local_path2sc(path_x);
@@ -1091,224 +1254,218 @@ set(findobj(gcf, 'Tag',[c_tag(1, 1:end-1),'2']),   'String','User_ID');
 return;
 %%
 
-% function                     	local_done_idae_1(ud);
-% %%
-% set(gco,    'Enable','off');
-% if isfield(ud,'reuse') && isfield(ud.reuse,'idae') && ud.reuse.idae>0;
-%                                 path_x                      = fileparts(ud.idae.real);
-% else;                           [fname, path_x]             = uigetfile(fullfile(pwd,'*'));        
-%     if ~ischar(fname);         	set(gco,    'Enable','on');                         return;         end;
-%                                                                                                     end;
-% %
-% ud.idae.real                    = fullfile(path_x, '(enter a folder name without spaces)');
-% ud.idae.real_c                  = local_path2sc(ud.idae.real);
-% %                           
-% %
-% for i=1:1:numel(ud.idae.real_c)-1;
-%    	set(ud.c1bHs(i+1), 'String',ud.idae.real_c{i}, 'CallBack','iv2_gen_lds(''idae_toggle'',[]);');	end;
-% %
-% set(ud.c1bHs(i+2), 'Style','edit',  'String',ud.idae.real_c{end}, 'BackgroundColor',iv2_bgcs(6));
-% set(ud.c2bHs(i+2), 'String','IDAE-ID'); 
-% %
-% set(ud.c1bHs(i+3), 'String','Do not see your user name on left column GUIs? If No, hit >');
-% set(ud.c2bHs(i+3), 'String','Restart',  'CallBack',['ud=get(gcf,''UserData''); ',  ...
-%                     'ud.stage=''idae_0''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);']); 
-% %
-% set(ud.c1bHs(1), 'String','Your home path segments. Follow below instructions. Then, hit >');
-% set(ud.c2bHs(1), 'String','Done',   'CallBack','iv2_gen_lds(''done'',[]);');
-% %
-% ud.stage                        = 'idae_2';
-% set(gcf,    'UserData',ud);
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-%     {'* Complete below tasks: ','1. Hit left column GUI showing your user name (turns orange when done)',  ...
-%     '2. Replace light green GUI with a non-existing folder name (no spaces please)',    ...
-%     '   (See MATLAB command window for existing folders)'});
-% %
-% d                               = dir(fullfile(fileparts(ud.idae.real),'*'));
-% d_name                          = char(d.name);
-% disp(['.directories in: ',fileparts(ud.idae.real)]);
-% dispCharArrays(1, char(d(d_name(:,1)~='.' & [d.isdir]'>0).name));
-% disp('> do not enter above existing folders in light green GUI.');
-% set(gco,    'Enable','on');
-% return;
-% %%
-
-% function                     	local_done_idae_2(ud);
-% %%
-% im1                             = umo_cstrs(char(get(ud.c2bHs, 'String')), ['User';'IDAE'], 'im1');
-% h0                              = findobj(gcf, 'Style','edit');
-% set(h0,     'Style','pushbutton');
-% % checking if User_ID is present:
-% if im1(1)<1;    
-%     for i=2:1:im1(2,1)-1;       set(ud.c1bHs(i),  'BackgroundColor',iv2_bgcs(11));
-%                                 pause(0.5);
-%                                 set(ud.c1bHs(i),  'BackgroundColor',iv2_bgcs(0));                   end
-%     set(h0, 'Style','edit');                                                    	return;         end
-% %
-% % when spces are presetn in the IDAE segment;
-% if im1(2)>0 && any(get(ud.c1bHs(im1(2)),'String')==' ');
-%     set(ud.c1bHs(im1(2)), 'BackgroundColor',iv2_bgcs(11));
-%     pause(0.5);
-%     set(ud.c1bHs(im1(2)), 'BackgroundColor',iv2_bgcs(6));
-%     set(h0, 'Style','edit');                                                    	return;         end
-% 
-% % constructing ud.idae.symbolic_c:
-% ss_end                          = get(ud.c1bHs(im1(2,1)),    'String');
-% ud.idae.real_c{end}             = ss_end(ss_end~=' ');
-% ud.idae.real                  	= fullfile(fileparts(ud.idae.real), ud.idae.real_c{end});
-% if exist(ud.idae.real,'dir');
-%     set(ud.c1bHs(im1(2,1)),     'String',[ud.idae.real_c{end},' - exists. replace it'],     ...
-%                                 'Style','edit', 'BackgroundColor',iv2_bgcs(11));
-%  	pause(0.5);
-%     set(ud.c1bHs(im1(2,1)),     'BackgroundColor',iv2_bgcs(6));                     return;         end;
-% %
-% s                               = mkdir(ud.idae.real);
-% if s<1;
-%     set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-%         {'* Unable to create your IDAE home directory ',    ...
-%         '  (No full-access to your home directory in Data Server?)', 	...
-%         '> Gathered information saved. ''Quit'' and Consult your local manager'});   
-%     local_save([]);                                                                 return;         end;
-% %
-% ss                              = ud.idae.real_c;
-% ss{im1(1,1)-1}                  = '$User_ID$';
-% ss{end}                         = ss_end(ss_end~=' ');
-% ud.idae.symbolic_c              = ss;
-% ddd                             = ss{1};
-% for i=2:1:numel(ss);            ddd                         = fullfile(ddd, ss{i});                 end;
-% ud.idae.symbolic                = ddd;
-% %
-% ud.stage                        = 'idae_done';
-% set(gcf,    'UserData',ud);
-% set(ud.c1bHs(1), 'String','Done for IDAE home directory! Observe info-Board. Then, hit >')
-% set(ud.c2bHs(1), 'String','Move on',   'CallBack','iv2_gen_lds(''done'',[]);');
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
-%     {'* Your IDAE home directory: ',[' ',ud.idae.real],             ...
-%     '* Generalized IDAE home directory, shared by users with the same conventions:',	...
-%     [' ',ud.idae.symbolic],    '> Hit ''Display'' for more info'});
-% return;
-% %%
-% 
-% function                     	local_done_idae_done(ud);
-% %%
-% % reset left & right columns:
-% local_reset_guis(ud);
-% 
-% set(ud.c1bHs(1), 'String','Select a PET source file in Image Server');
-% set(ud.c2bHs(1), 'String','Start',   'CallBack','iv2_gen_lds(''pet_is'',0);');
-% % 
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
-%     {'* Select a PET source file in Image Server to register it''s directory conventions',  ...
-%     '  - any file is OK, so long as it is in a regular PET souce file folder'});
-% return;
-% %%
-
-function                        local_search_files(i2);
+function                     	local_done_idae_1(ud);
 %%
-coUD                            = get(gco, 'UserData');
-ud                              = get(gcf, 'UserData');
+set(gco,    'Enable','off');
+if isfield(ud,'reuse') && isfield(ud.reuse,'idae') && ud.reuse.idae>0;
+                                path_x                      = fileparts(ud.idae.real);
+else;                           [fname, path_x]             = uigetfile(fullfile(pwd,'*'));        
+    if ~ischar(fname);         	set(gco,    'Enable','on');                         return;         end;
+                                                                                                    end;
 %
-[fname, path_x]           	    = uigetfile(fullfile(pwd,coUD.fln),coUD.title);
-
-if ~ischar(fname);         	    set(gco,    'Enable','on');                         return;         end
-path_x                          = fileparts(fullfile(path_x,fname));
+ud.idae.real                    = fullfile(path_x, '(enter a folder name without spaces)');
+ud.idae.real_c                  = local_path2sc(ud.idae.real);
+%                           
 %
-eval([coUD.var,'                = path_x;'])
-set(coUD.bH, 'String','Done');
-set(ud.c1bHs(coUD.bNo+1), 'String',path_x);
+for i=1:1:numel(ud.idae.real_c)-1;
+   	set(ud.c1bHs(i+1), 'String',ud.idae.real_c{i}, 'CallBack','iv2_gen_lds(''idae_toggle'',[]);');	end;
 %
+set(ud.c1bHs(i+2), 'Style','edit',  'String',ud.idae.real_c{end}, 'BackgroundColor',iv2_bgcs(6));
+set(ud.c2bHs(i+2), 'String','IDAE-ID'); 
+%
+set(ud.c1bHs(i+3), 'String','Do not see your user name on left column GUIs? If No, hit >');
+set(ud.c2bHs(i+3), 'String','Restart',  'CallBack',['ud=get(gcf,''UserData''); ',  ...
+                    'ud.stage=''idae_0''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);']); 
+%
+set(ud.c1bHs(1), 'String','Your home path segments. Follow below instructions. Then, hit >');
+set(ud.c2bHs(1), 'String','Done',   'CallBack','iv2_gen_lds(''done'',[]);');
+%
+ud.stage                        = 'idae_2';
+set(gcf,    'UserData',ud);
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+    {'* Complete below tasks: ','1. Hit left column GUI showing your user name',  ...
+    '2. Replace light green GUI with a non-existing folder name (no spaces please)',    ...
+    '   (See MATLAB command window for existing folders)'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+%
+d                               = dir(fullfile(fileparts(ud.idae.real),'*'));
+d_name                          = char(d.name);
+disp(['.directories in: ',fileparts(ud.idae.real)]);
+dispCharArrays(1, char(d(d_name(:,1)~='.' & [d.isdir]'>0).name));
+disp('> do not enter above existing folders in light green GUI.');
+set(gco,    'Enable','on');
 return;
 %%
 
-function                        local_sort_etc(ud);
+function                     	local_done_idae_2(ud);
+%%
+im1                             = umo_cstrs(char(get(ud.c2bHs, 'String')), ['User';'IDAE'], 'im1');
+h0                              = findobj(gcf, 'Style','edit');
+set(h0,     'Style','pushbutton');
+% checking if User_ID is present:
+if im1(1)<1;    
+    for i=2:1:im1(2,1)-1;       set(ud.c1bHs(i),  'BackgroundColor',iv2_bgcs(11));
+                                pause(0.5);
+                                set(ud.c1bHs(i),  'BackgroundColor',iv2_bgcs(0));                   end;
+    set(h0, 'Style','edit');                                                    	return;         end;
+%
+% constructing ud.idae.symbolic_c:
+ss_end                          = get(ud.c1bHs(im1(2,1)),    'String');
+ud.idae.real_c{end}             = ss_end(ss_end~=' ');
+ud.idae.real                  	= fullfile(fileparts(ud.idae.real), ud.idae.real_c{end});
+if exist(ud.idae.real,'dir');
+    set(ud.c1bHs(im1(2,1)),     'String',[ud.idae.real_c{end},' - exists. replace it'],     ...
+                                'Style','edit', 'BackgroundColor',iv2_bgcs(11));
+ 	pause(0.5);
+    set(ud.c1bHs(im1(2,1)),     'BackgroundColor',iv2_bgcs(6));                     return;         end;
+%
+s                               = mkdir(ud.idae.real);
+if s<1;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
+        {'* Unable to create your IDAE home directory ',    ...
+        '  (No full-access to your home directory in Data Server?)', 	...
+        '> Gathered information saved. ''Quit'' and Consult your local manager'});   
+    local_save([]);                                                                 return;         end;
+%
+ss                              = ud.idae.real_c;
+ss{im1(1,1)-1}                  = '$User_ID$';
+ss{end}                         = ss_end(ss_end~=' ');
+ud.idae.symbolic_c              = ss;
+ddd                             = ss{1};
+for i=2:1:numel(ss);            ddd                         = fullfile(ddd, ss{i});                 end;
+ud.idae.symbolic                = ddd;
+%
+ud.stage                        = 'idae_done';
+set(gcf,    'UserData',ud);
+set(ud.c1bHs(1), 'String','Done for IDAE home directory! Observe info-Board. Then, hit >')
+set(ud.c2bHs(1), 'String','Move on',   'CallBack','iv2_gen_lds(''done'',[]);');
+%
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+    {'* Your IDAE home directory: ',[' ',ud.idae.real],             ...
+    '* Generalized IDAE home directory, shared by users with the same conventions:',	...
+    [' ',ud.idae.symbolic],    '> Hit ''Display'' for more info'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+return;
+%%
+
+function                     	local_done_idae_done(ud);
+%%
+% reset left & right columns:
+local_reset_guis(ud);
+
+set(ud.c1bHs(1), 'String','Select a PET source file in Image Server');
+set(ud.c2bHs(1), 'String','Start',   'CallBack','iv2_gen_lds(''pet_is'',0);');
+% 
+set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+    {'* Select a PET source file in Image Server to learn the directory conventions'});
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
+return;
+%%
+
+function                        local_done_mri_ds_done(ud);
 % reset left & right columns:
 local_reset_guis(ud);
 %
+s_count                         = 0;
 %% SPM12
-spm_home                        = which('spm_vol.m');
+spm_code                        = which('spm_vol.m');
 ic                              = 2;
-if isempty(spm_home);       
-    set(ud.c1bHs(ic),   'String','Find SPM12''s home directory using the file navigator');
-    set(ud.c2bHs(ic),   'String','Start',   'CallBack','iv2_gen_lds(''search_files'',[]);', ...
-        'UserData',struct('fln','spm_vol.m', 'var','ud.etc.spm_home', 'bH',ud.c2bHs(ic), 'bNo',ic,  ...
-        'title','Identify spm_vol.m from SPM12''s main folder'));
-    set(ud.c1bHs(ic+1), 'Style','text', 'String',' ', 'HorizontalAlignment','center');
+disp('.sorting out SPM12'' home directory:');
+if isempty(spm_code);       
+    set(ud.c1bHs(ic),   'String','Find SPM12''s home directory (select spm_vol.m)');
+    set(ud.c2bHs(ic),   'String','Start',   'CallBack','iv2_gen_lds(''search_spm'',[]);');
+    s_count                     = s_count + 1;
 else;                           
-    ud.etc.spm_home             = fileparts(spm_home);
-  	set(ud.c1bHs(ic),   'String','SPM12''s home directory');
- 	set(ud.c2bHs(ic),   'String','Done');
-    set(ud.c1bHs(ic+1), 'Style','text', 'String',ud.etc.spm_home, 'HorizontalAlignment','center');  end
+    ud.etc.spm_home             = fileparts(spm_code);
+  	disp(['* SPM12''s home directory: ',ud.etc.spm_home]);
+  	set(ud.c1bHs(ic),   'String','SPM12'' home directory');
+ 	set(ud.c2bHs(ic),   'String','Done');                                                           end;
 %% Freesurfer
+disp('.sorting out directory to place scripts for FreeSurfer:');
 s                               = 1;
 if ~exist(fullfile(ud.idae.real,'fs_scripts'),'dir');
-    s                          	= mkdir(fullfile(ud.idae.real,'fs_scripts'));                       end
-%
-ic                              = ic + 2;
+    s                          	= mkdir(fullfile(ud.idae.real,'fs_scripts'));                       end;
+ic                              = ic + 1;
 set(ud.c1bHs(ic),   'String','Folder for Freesuefer scripts');
-%
 if s>0;                         
- 	% disp([' ',fullfile(ud.idae.real,'fs_scripts')]);
+    disp('> created/present');
+ 	disp([' ',fullfile(ud.idae.real,'fs_scripts')]);
+   	set(ud.c2bHs(ic),   'String','Done');
     ud.etc.fs_script_ws_real    = fullfile(ud.idae.real,'fs_scripts');
-    ud.etc.fs_script_ws_symbolic= replace(ud.etc.fs_script_ws_real,ud.idae.user_name,'$User_ID$');
-    % ud.etc.fs_script_ws_c       = ud.idae.symbolic_c;
-    % ud.etc.fs_script_ws_c{end+1}                            = 'fs_scripts';     
+    ud.etc.fs_script_ws         = fullfile(ud.idae.symbolic,'fs_scripts');
+    ud.etc.fs_script_ws_c       = ud.idae.symbolic_c;
+    ud.etc.fs_script_ws_c{end+1}                            = 'fs_scripts';     
     qqq                         = {'FS_done.txt', 'FS_submitted.txt'};
     for i=1:1:numel(qqq);
-        write2ptf(fullfile(ud.etc.fs_script_ws_real,qqq{i}), 'symbolic');                      	    end
-    set(ud.c2bHs(ic),   'String','Done');
-else;                           
-    % disp('> unable to create folder for Freesuefer scripts');
-    % disp([' you have no full-access tp: ',ud.idae.real]);
-    ud.etc.fs_script_ws_real    = ['Faile: No full-access to: ',ud.idae.real];
-    set(ud.c2bHs(ic),   'String','Failed');                                                         end
-%
-set(ud.c1bHs(ic+1), 'Style','text', 'String',ud.etc.fs_script_ws_real, 'HorizontalAlignment','center');
-
-% windows 10:
+        write2ptf(fullfile(ud.idae.real,'fs_scripts',qqq{i}), 'symbolic');                      	end;
+else;                           disp('> unable to create folder for Freesuefer scripts');
+                                disp([' you have no full-control of: ',ud.idae.real]);
+                                set(ud.c2bHs(ic),   'String','Failed');                             end;
+% window:
 if any(ud.pet.ds.real=='\') && s>0;
-    ic                          = ic + 2;
-    set(ud.c1bHs(ic),   'String','Enter Freesurfer''s script folder seen from the Linux side');
-    set(ud.c2bHs(ic),   'String','Start', 'CallBack','iv2_gen_lds(''copy_paste'',[]);');
-    % 
-    if isfield(ud.etc,'fs_script_ds_real');
-        if isfield(ud.idae,'new_user');
-            ud.etc.fs_script_ds_real    ...
-                                = replace(ud.etc.fs_script_ds_symbolic,'$User_ID$', ...
-                                                            ud.idae.user_name);                     end
-        set(ud.c1bHs(ic+1), 'String',ud.etc.fs_script_ds_real,    ...
-                                'Style','text',  'UserData','fs_script_ds');
-        set(ud.c2bHs(ic),   'String','Done');
-    else
-        set(ud.c1bHs(ic+1), 'String','Copy & paste from the Linux machine', ...
-                                'Style','text',  'UserData','fs_script_ds');                        end
-else
-    ud.etc.fs_script_ds_real    = ud.etc.fs_script_ws_real;
-    ud.etc.fs_script_ds_symbolic= ud.etc.fs_script_ws_symbolic;                                     end
-
+    ic                          = ic + 1;
+    set(ud.c1bHs(ic),   'String','Enter Freesurfer''s script folder seen from Linux side');
+    set(ud.c2bHs(ic),   'String','Start',   'CallBack','iv2_gen_lds(''fs_script'',''w'');');
+    s_count                     = s_count + 1;                                                      end;
+if ~any(ud.pet.ds.real=='\') && s>0;
+    ud.etc.fs_script_ds         = ud.etc.fs_script_ws;
+    ud.etc.fs_script_ds_c       = ud.etc.fs_script_ws_c;                                            end;
+% 
+ic                              = ic + 1;
+disp('.sorting out Freesurfer''s ''subject'' directory:');
+if any(ud.pet.ds.real=='\');
+    set(ud.c1bHs(ic),   'String','Enter Freesurfer''s subject folder as instructed');
+    set(ud.c2bHs(ic),   'String','Start',   'CallBack','iv2_gen_lds(''fs_subject'',''w'');');
+  	s_count                     = s_count + 1;
+else;
+    set(ud.c1bHs(ic),   'String','Select sample-001.mgz in Freesurfer''s subject folder');
+    set(ud.c2bHs(ic),   'String','Start',   'CallBack','iv2_gen_lds(''fs_subject'',''l'');');
+    s_count                     = s_count + 1;                                                      end;
+%    
+% ''dump'' folder
+disp('.sorting out ''dump'' folder to place temporary files:');
+s2                              = 1;
+if ~exist(fullfile(ud.idae.real,'tmp'),'dir');  
+    s2                          = mkdir(fullfile(ud.idae.real,'tmp'));                              end;
+ic                              = ic + 1;
+set(ud.c1bHs(ic),   'String','Dump folder to place temporary files');
+if s2>0;                      	disp('> created/present');
+                                disp([' ',fullfile(ud.idae.real,'tmp')]);
+                                set(ud.c2bHs(ic),   'String','Done');
+    ud.etc.dump                 = fullfile(ud.idae.symbolic,'tmp');
+    write2ptf(fullfile(ud.idae.real,'tmp','scratch.m'), 'presence only');
+else;                           disp('- unable to create ''dump'' folder');
+                                disp([' you have no full-control of: ',ud.idae.real]);
+                                set(ud.c2bHs(ic),   'String','Failed');                             end;
 %% data unit:
-% disp('.sorting out radioactivity units:');
-ic                              = ic + 2;
+disp('.sorting out radioactivity units:');
+ic                              = ic + 1;
 set(ud.c1bHs(ic),   'String','Select the radioativity unit to use');
 set(ud.c2bHs(ic),   'Value',1,  'Style','popupmenu',    'String',{'Select','nCi/mL','Bq/mL'},   ...
                                 'CallBack','iv2_gen_lds(''unit_done'',[]);');
-%
-if isfield(ud.etc,'unit')
-    set(ud.c2bHs(ic), 'Value',umo_cstrs(char({'Select','nCi/mL','Bq/mL'}),ud.etc.unit, 'im1'));     end
-%
-set(ud.c1bHs(1), 'String','A few items to go. Follow the instructions below')
+
+ud.stage                        = 'all_done';
+
+ud.matlab.startup               = which('startup.m');
+set(gcf,    'UserData',ud);
+
+set(ud.c1bHs(1), 'String','A few more to go. Follow the instructions shown in info-board below')
 set(ud.c2bHs(1), 'String','Done',   'CallBack','iv2_gen_lds(''done'',[]);');
 %
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-    {'* Complete the items marked as ''Start'' (right) as instructed, and'
-    '  select the radioactivity unit'
-    '> Hit ''Done'' @top-right when all are done'});
-%
-ud.etc.variables                = {'spm_home','fs_script_ws_real','fs_script_ws_symbolic',  ...  
-                                    'fs_script_ds_real','fs_script_ds_symbolic','unit'};
-ud.stage                        = 'check_etc';
-set(gcf, 'UserData',ud);
+if s_count>0;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+        {['* ',int2str(s_count),' ''Start'' GUIs (right column) & radioactivity unit to go!'],   ...
+        '> Visit each ''Start'' and complete the task',   '> Slect the radioactivity unit'});
+else;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
+        {'* One more to go', '> Slect the radioactivity unit'});
+    local_save([]);                                                                                 end;
+set(findobj(gcf, 'Tag','iv2_gen_lds_end_1'), ...
+                                'Userdata',get(findobj(gcf, 'Tag','iv2_gen_lds_infoB'), 'String'));
 return;
 %%
 
@@ -1328,152 +1485,82 @@ set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',{'* SPM12 folder: ',[' 
 return;
 %%
 
-% function                        local_fs_script(i2);
-% %%
-% ud                              = get(gcf,      'UserData');
-% set(gco,    'Enable','off');
-% drawnow;
-% if i2=='w';
-%     disp(['> Freesurfer script folder (Windowds): ',ud.etc.fs_script_ws_real]);
-%     disp('  Find it in you the Linux system to run Freesurfer (typically starts with /mnt)');
-%     disp('  There should be FS_done.txt  FS_submitted.txt in the flder by now');
-%     disp('> Copy & past it below');
-%     s                           = input(' Enter the folder name seen from Linux (Ret=cancel): ','s');
-%     if isempty(s);                                                                  return;         end;
-%     im1                         = umo_cstrs(char(ud.idae.symbolic_c),'$User_ID', 'im1');
-%     if im1(1)<1 || size(im1,2)>1;                                                   return;         end;
-%     %
-%     s(s=='/')                   = ' ';
-%     sc                          = getLseg(s,    [0,2]);
-%     sc{1}                       = ['/',sc{1}];
-%     im2                         = umo_cstrs(char(sc),  ud.idae.real_c{im1}, 'im1');
-%     if im2(1)<1 || size(im2,2)>1;                                                   return;         end;
-%     %
-%     sc{im2(1)}                  = '$User_ID$';
-%     ud.etc.fs_script_ds_c       = sc;
-%     out                         = sc{1};
-%     for i=2:1:numel(sc);        out                         = [out,'/',sc{i}];                  	end;
-%     ud.etc.fs_script_ds         = out;
-%     
-%     set(gcf,    'UserData',ud);
-%     set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');                 return;         end;
-% return;
-% %%
-% 
-% function                        local_fs_subject(i2);
-% %%
-% ud                              = get(gcf,      'UserData');
-% set(gco,    'Enable','off');
-% drawnow;
-% if i2=='w';
-%     disp('> Inquiring Freesurfer''s subject folder');
-%     disp('  Go to Freesurfer''s subject folder in your Linux system');
-%     disp('  (Tyoically try [your linux]: cd freesurfer/subject)');
-%     disp('  Then, type [your linux]: pwd')
-%     disp('  Copy & past the output below');
-%   	s                           = input(' Freesurfer''s subject folder in Linux) (Ret=cancel): ','s');
-%     if isempty(s);                                                                  return;         end;
-%     im1                         = umo_cstrs(char(ud.idae.symbolic_c),'$User_ID', 'im1');
-%     if im1(1)<1 || size(im1,2)>1;                                                   return;         end;
-%     %
-%     s(s=='/')                   = ' ';
-%     sc                          = getLseg(s,    [0,2]);
-%     sc{1}                       = ['/',sc{1}];
-%     im2                         = umo_cstrs(char(sc),  ud.idae.real_c{im1}, 'im1');
-%     if im2(1)<1 || size(im2,2)>1;                                                   return;         end;
-%     %
-%     sc{im2(1)}                  = '$User_ID$';
-%     ud.etc.fs_subject_ds_c      = sc;
-%     %
-%     out                         = sc{1};
-%     for i=2:1:numel(sc);        out                         = [out,'/',sc{i}];                  	end;
-%     ud.etc.fs_subject_ds        = out;
-%     set(gcf,    'UserData',ud);
-%     set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');                 return;         end;
-% % 
-% % Linux version
-% disp(i2)
-%     s                           = getenv('SUBJECTS_DIR');
-%     ud.etc.fs_subject_ds        = s;
-% 
-%     s(s=='/')                   = ' ';
-%     sc                          = getLseg(s,    [0,2]);
-%     sc{1}                       = ['/',sc{1}];
-%     ud.etc.fs_subject_ds_c      = sc;
-%     set(gcf,    'UserData',ud);
-%     set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');              
-% 
-%   
-% return;
-% %%
-
-function                        local_copy_paste(i2)
+function                        local_fs_script(i2);
 %%
-ud                              = get(gcf,  'UserData');
-rR                              = find(ud.c2bHs==gco);
-% add to sss when a new string is added as a possibility: 
-sss                             = ['fs_scri';'user_na'];
-if ~isempty(rR)
-    set(gco, 'String','In progress')
-    set(ud.c1bHs(rR+1), 'Style','edit', 'CallBack','iv2_gen_lds(''copy_paste'',[]);');
-    im1                         = umo_cstrs(sss, get(ud.c1bHs(rR+1),'UserData'),'im1');
-    if im1(1)<0;                set(gco, 'String','???');                           return;         end
-    if im1(1)==1
-        set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-            {['* ',get(ud.c1bHs(rR), 'String')] 
-            '> In the Linux machine with Freesurfer, find the directory that correspond to: '
-            ['   ',get(ud.c1bHs(rR-1), 'String')]
-            '  (you should be able to see FS_done.txt in the folder by now)'
-            '> Copy the full directory to the designated GUI'});                                    end
-                                                                                    return;         end
-% done on a left-column GUI:
-rL                              = find(ud.c1bHs==gco);
-if isempty(rL);                                                                     return;         end
-%
-im1                             = umo_cstrs(sss, get(ud.c1bHs(rL),'UserData'),'im1');
-if im1(1)<0;                    set(ud.c2bHs(rL-1), 'String','???');                return;         end
-
-%
-s1                              = get(gco, 'String');
-% for fs_script_ds:
-if im1(1)==1;
-    ud.etc.fs_script_ds_real    = s1(s1~=' ');
+ud                              = get(gcf,      'UserData');
+set(gco,    'Enable','off');
+drawnow;
+if i2=='w';
+    disp(['> Freesurfer script folder (Windowds): ',ud.etc.fs_script_ws_real]);
+    disp('  Find it in you the Linux system to run Freesurfer (typically starts with /mnt)');
+    disp('  There should be FS_done.txt  FS_submitted.txt in the flder by now');
+    disp('> Copy & past it below');
+    s                           = input(' Enter the folder name seen from Linux (Ret=cancel): ','s');
+    if isempty(s);                                                                  return;         end;
+    im1                         = umo_cstrs(char(ud.idae.symbolic_c),'$User_ID', 'im1');
+    if im1(1)<1 || size(im1,2)>1;                                                   return;         end;
     %
-    im1                         = umo_cstrs(char(local_str2cell(ud.etc.fs_script_ws_real)), ...
-                                    char(local_str2cell(ud.etc.fs_script_ds_real)), 'im1');
-    % lower segments must all agree
-    if ~any(im1>0) || any(im1(find(im1>0,1):end)<1) || ...
-        ~contains(ud.etc.fs_script_ds_real,ud.idae.user_name)
-        set(gco, 'BackgroundColor',iv2_bgcs(11));
-        pause(0.5)
-        set(gco, 'BackgroundColor',iv2_bgcs(0));                                    return;         end
-
-    % replacing the username with '$User_ID$':
-    ud.etc.fs_script_ds_symbolic= replace(ud.etc.fs_script_ds_real,ud.idae.user_name,'$User_ID$');
-%
-% for username:
-elseif im1(1)==2;               ud.idae.user_name           = s1(s1~=' ');                          end;
-%
-set(ud.c2bHs(rL-1), 'String','Done')
-set(gcf, 'UserData',ud);
+    s(s=='/')                   = ' ';
+    sc                          = getLseg(s,    [0,2]);
+    sc{1}                       = ['/',sc{1}];
+    im2                         = umo_cstrs(char(sc),  ud.idae.real_c{im1}, 'im1');
+    if im2(1)<1 || size(im2,2)>1;                                                   return;         end;
+    %
+    sc{im2(1)}                  = '$User_ID$';
+    ud.etc.fs_script_ds_c       = sc;
+    out                         = sc{1};
+    for i=2:1:numel(sc);        out                         = [out,'/',sc{i}];                  	end;
+    ud.etc.fs_script_ds         = out;
+    
+    set(gcf,    'UserData',ud);
+    set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');                 return;         end;
 return;
 %%
 
-function    out                 = local_str2cell(i2);
+function                        local_fs_subject(i2);
 %%
-% inserted to: iv2_setAproj.m/
-%
-if iscell(i2);
-    out                         = i2{1};
-    for i=2:1:numel(i2);        out                         = fullfile(out,i2{i});                  end
-    if i2{1}(1)=='/';           out(out==filesep)           = '/';                                  end
-                                                                                    return;         end
-%
-i2x                             = i2;
-i2x(i2=='/' | i2=='\')          = ' ';
-if i2(1)=='/' || i2(1)=='\';    i2x(1)                      = i2(1);                                end
-out                             = getLseg(i2x, [0,2]);
-%
+ud                              = get(gcf,      'UserData');
+set(gco,    'Enable','off');
+drawnow;
+if i2=='w';
+    disp('> Inquiring Freesurfer''s subject folder');
+    disp('  Go to Freesurfer''s subject folder in your Linux system');
+    disp('  (Tyoically try [your linux]: cd freesurfer/subject)');
+    disp('  Then, type [your linux]: pwd')
+    disp('  Copy & past the output below');
+  	s                           = input(' Freesurfer''s subject folder in Linux) (Ret=cancel): ','s');
+    if isempty(s);                                                                  return;         end;
+    im1                         = umo_cstrs(char(ud.idae.symbolic_c),'$User_ID', 'im1');
+    if im1(1)<1 || size(im1,2)>1;                                                   return;         end;
+    %
+    s(s=='/')                   = ' ';
+    sc                          = getLseg(s,    [0,2]);
+    sc{1}                       = ['/',sc{1}];
+    im2                         = umo_cstrs(char(sc),  ud.idae.real_c{im1}, 'im1');
+    if im2(1)<1 || size(im2,2)>1;                                                   return;         end;
+    %
+    sc{im2(1)}                  = '$User_ID$';
+    ud.etc.fs_subject_ds_c      = sc;
+    %
+    out                         = sc{1};
+    for i=2:1:numel(sc);        out                         = [out,'/',sc{i}];                  	end;
+    ud.etc.fs_subject_ds        = out;
+    set(gcf,    'UserData',ud);
+    set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');                 return;         end;
+% 
+% Linux version
+disp(i2)
+    s                           = getenv('SUBJECTS_DIR');
+    ud.etc.fs_subject_ds        = s;
+
+    s(s=='/')                   = ' ';
+    sc                          = getLseg(s,    [0,2]);
+    sc{1}                       = ['/',sc{1}];
+    ud.etc.fs_subject_ds_c      = sc;
+    set(gcf,    'UserData',ud);
+    set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');              
+
+  
 return;
 %%
 
@@ -1499,7 +1586,8 @@ fn2ck{2}                        = {'symbolic_c','format_c','search_c'};
 fn2ck{3}                        = {'symbolic_c'};
 fn2ck{4}                        = {'symbolic_c','format_c','search_c'};
 fn2ck{5}                        = {'symbolic_c'};
-fn2ck{6}                        = {'spm_home','fs_script_ws','fs_subject_ds','dump','unit'};
+fn2ck{6}                        = {'spm_home','fs_script_ws','fs_subject_ds','fs_script_ds',    ...
+                                                        	'dump','unit'};
 %
 for i=1:1:numel(fck);
     if isfield(ud,fck{i});
@@ -1514,7 +1602,7 @@ for i=1:1:numel(fck);
 %
 if ok<1;                        set(ud.c1bHs(1), 'BackgroundColor',iv2_bgcs(11));
                                 pause(0.5);
-                                set(ud.c1bHs(1), 'BackgroundColor',iv2_bgcs(6));   return;         end;
+                                set(ud.c1bHs(1), 'BackgroundColor',iv2_bgcs(12));   return;         end;
 %
 iv2_gen_lds_2(ud);
 % 
@@ -1524,161 +1612,4 @@ iv2_gen_lds_2(ud);
 return;
 %%
 
-function                        local_get_is_ds(ud)
-%%
-%
-% ud                              = get(gcf, 'UserData');
-local_reset_guis(ud);
 
-set(ud.c1bHs(1), 'String','Complete below inquiries, after reviwing the info-board ')
-set(ud.c2bHs(1), 'String','Move on',   'CallBack','iv2_gen_lds(''done'',[]);');
-
-% PET source file in Image server:
-ic                              = 2;
-set(ud.c1bHs(ic), 'String','Select a representative PET source file in Image server');
-if isfield(ud,'pet') && isfield(ud.pet,'is') && isfield(ud.pet.is,'real');
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',ud.pet.is.real, 'Style','text', ...
-                                'UserData','ud.pet.is.real', 'HorizontalAlignment','center');
-else;
-    set(ud.c2bHs(ic), 'String','Start', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',' ', 'Style','text', ...
-                                'UserData','ud.pet.is.real', 'HorizontalAlignment','center');       end
-%
-% PET analysis output file in Data server:
-ic                              = 4;
-set(ud.c1bHs(ic), 'String','Select a representative PET analysis output in Data server');
-if isfield(ud,'pet') && isfield(ud.pet,'ds') && isfield(ud.pet.ds,'real');
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',ud.pet.ds.real, 'Style','text', ...
-                                'UserData','ud.pet.ds.real', 'HorizontalAlignment','center');
-else;
-    set(ud.c2bHs(ic), 'String','Start', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');    
-    set(ud.c1bHs(ic+1), 'String',' ', 'Style','text', ...
-                                'UserData','ud.pet.ds.real', 'HorizontalAlignment','center');       end
-%
-% A MRI source file in Image server
-ic                              = 6;
-set(ud.c1bHs(ic), 'String','Select a representative MRI source file in Image server');
-if isfield(ud,'mri') && isfield(ud.mri,'is') && isfield(ud.mri.is,'real');
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',ud.mri.is.real, 'Style','text', ...
-                                'UserData','ud.mri.is.real', 'HorizontalAlignment','center');
-else;
-    set(ud.c2bHs(ic), 'String','Start', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',' ', 'Style','text', ...
-                                'UserData','ud.mri.is.real', 'HorizontalAlignment','center');       end
-%
-% A MRI analysis output file in Data server:
-ic                              = 8;
-set(ud.c1bHs(ic), 'String','Select a representative MRI analysis output in Data server');
-if isfield(ud,'mri') && isfield(ud.mri,'ds') && isfield(ud.mri.ds,'real');
-    set(ud.c2bHs(ic), 'String','Done', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');
-    set(ud.c1bHs(ic+1), 'String',ud.mri.ds.real, 'Style','text', ...
-                                'UserData','ud.mri.ds.real', 'HorizontalAlignment','center');
-else;
-    set(ud.c2bHs(ic), 'String','Start', 'CallBack','iv2_gen_lds(''uigetfile'',[]);');    
-    set(ud.c1bHs(ic+1), 'String',' ', 'Style','text', ...
-                                'UserData','ud.mri.ds.real', 'HorizontalAlignment','center');       end
-%
-%
-set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-    {'* The responses (= example folders) will be used to make it possible:'
-    ' - To identify source files as seamlessly as possible using the study log file'
-    '   which lists all scans of a study (manually maintained by the study team), and'
-    ' - To follow the existing conventions when to set folders for outputs from IDAE'
-    '* Acceptable formats for PET & MRI source files are:'
-    '   DICOM or ECAT 7 (*.v) for PET & DICOM or Phillips PET/REC for MRI'})
-%
-ud.stage                        = 'get_is_ds';
-set(gcf, 'UserData',ud);
-return;
-%%
-
-function                        local_done_get_is_ds(ud);
-%%
-bNos                            = 2:2:8;
-im1                             = umo_cstrs('Done', char(get(ud.c2bHs(bNos), 'String')), 'im1'); 
-if any(im1<1);
-    for i=find(im1'<1);         set(ud.c1bHs(bNos(i)),  'BackggroundColor',iv2_bgcs(11));
-                                pause(0.5)
-                                set(ud.c1bHs(bNos(i)),  'BackggroundColor',iv2_bgcs(0));            end
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ... 
-        {'* Insufficient entries found (blinked in pink)'
-        '> Complete them using the right-column GUIs'});                            return;         end
-% 
-ud.stage                        = 'pet_is_1'
-
-local_pet_is(ud);
-
-return;
-%%
-
-function                        local_uigetfile(i2);
-%%
-%
-ud                              = get(gcf, 'UserData');
-
-set(gco, 'String','In progress')
-drawnow
-
-rR                              = find(ud.c2bHs==gco,1);
-
-[fname, path_x]          	    = uigetfile('*', get(ud.c1bHs(rR), 'String'));
-if ~ischar(fname);                                                                  return;         end
-%
-%
-path_s                          = fileparts(fullfile(path_x, fname));
-set(ud.c1bHs(rR+1), 'String',path_s);
-% 
-sss                             = ['ud.pet.is';'ud.pet.ds';'ud.mri.is';'ud.mri.ds';'user_home'];
-im1                             = umo_cstrs(sss, get(ud.c1bHs(rR+1), 'UserData'), 'im1');
-if im1(1)<1;                    set(ud.c2bHs(rR), 'String','???');                  return;         end;
-%
-if im1(1)==1;                   ud.pet.is.real              = path_s;
-elseif im1(1)==2;               ud.pet.ds.real              = path_s;
-elseif im1(1)==3;               ud.mri.is.real              = path_s;
-elseif im1(1)==4;               ud.mri.ds.real              = path_s; 
-elseif im1(1)==5;               ud.idae.user_home           = path_s;                               
-                                ud.idae.real                = fullfile(path_s,'iv2');
-                                set(ud.c2bHs(rR+2), 'String','Done');
-                                set(ud.c1bHs(rR+3), 'String',ud.idae.real);                         end;
-%
-set(ud.c2bHs(rR), 'String','Done');
-set(gcf, 'UserData',ud);
-return
-%%
-
-function                        local_done_check_etc(ud)
-%%
-im1                             = umo_cstrs(char(get(ud.c2bHs,'style')), 'popupmenu', 'im1');
-
-ok                              = 1;
-if ~isfield(ud.etc,'unit');     set(ud.c2bHs(im1), 'BackgroundColor',iv2_bgcs(11));
-                                pause(0.5)
-                                set(ud.c2bHs(im1), 'BackgroundColor',iv2_bgcs(0));
-                                ok                          = 0;                                    end
-%
-im2                             = umo_cstrs('Done', char(get(ud.c2bHs(2:2:im1(1)-1),'String')), 'im1');
-if any(im2<1);
-    for i=find(im2'<1).*2;      set(ud.c2bHs(i), 'BackgroundColor',iv2_bgcs(11));
-                                pause(0.5)
-                                set(ud.c2bHs(i), 'BackgroundColor',iv2_bgcs(0));                    end
-                                ok                          = 0;                                    end
-%
-if ok<1; 
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ... 
-        {'* Insufficient entries found (blinked in pink)'
-        '> Complete them using the right-column GUIs'});                            return;         end
-%
-%
-if isfield(ud.idae,'new_user')
-    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ... 
-        {['* IDAE is ready for user: ',ud.idae.user_name]
-        [' - IDAE home directory: ',ud.idae.real]
-        ' - Type as follows in Matlab''s command window when to use IDAE'
-        ['  >> run ',fullfile(ud.idae.user_home,'start_IDAE.m')]});                 return;         end
-    
-
-return;
-%%

@@ -135,7 +135,7 @@ pet_seg_no_is                   = umo_cstrs(char(lds.pet_is.symbolic_c      ...
 subject_seg_no_ds               = umo_cstrs(char(lds.pet_ds.symbolic_c), '$Sub', 'im1');
 %
 %
-local_get_pet{1}                = ['out.mqq                         = [',int2str(mqq),'];'];
+local_get_pet{1}                = ['out.mqqsymbolic_c                         = [',int2str(mqq),'];'];
 s0                              = 'out.search_q                    = {';
 s1                              = 'out.search_t                    = {';
 for i=1:1:numel(search_q);      s0                          = [s0,'''',search_q{i},''', ']; 

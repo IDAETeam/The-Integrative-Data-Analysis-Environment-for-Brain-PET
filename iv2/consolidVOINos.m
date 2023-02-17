@@ -247,20 +247,13 @@ if any(d(vi(:,2),7)<2);
     dispCharArrays(1,vv.anm(d(vi(:,2),7)<2,:));
     disp(' <end of the list');                                                      return;         end;
 %
-vW                              = consolidVOINos(d(:,2), x.vois4iv2.vnos(:,1));
-vL                              = consolidVOINos(d(:,2), x.vois4iv2.vnos(:,1)+100);
-vR                              = consolidVOINos(d(:,2), x.vois4iv2.vnos(:,1)+200);
+vj                              = zeros(size(v2r,1),    4);
+for i=2:1:4;
+    vj(:, [1,i])                = consolidVOINos(v2r_all, v2r+100.*(i-2));                          end;
 %
-out                             = [vW(:,1), double([vW(:,2)>0, vL(:,2)>0, vR(:,2)>0])];
-%
-out(out(:,2)<1,2)               = out(out(:,2)<1, 3:4)*[1;1];
-if any(out(:,2)<1);
-    vv                          = VOIdef(out(out(:,2)<1,1));
-    disp('.warning! no TACs for left-right merged VOIs for:')
-    dispCharArrays(1,vv.anm)
-    disp(' <end of the list');                                                                      end
-%
-out(out(:,2)>0, 2)              = 1;
-%
+vj(vj>0)                        = 1;
+out                             = vj;
+out(:,  1)                      = v2r(:);
+%%
 return;
 %%

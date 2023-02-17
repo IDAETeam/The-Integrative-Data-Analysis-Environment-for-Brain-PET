@@ -104,9 +104,10 @@ if strcmpi(pnm,g4iv2.xxx(1).pmp);
                                 'pio',g4iv2.xxx(1).pio, 'ifc',g4iv2.xxx(1).ifc, 'pmp',g4iv2.xxx(1).pmp);
     save(fullfile(pdx, [pnm,'.mat']),   'prepMP');                                                  end;
 return;
-%%
 
 function   [ifl, ooo, fff, ppp] = local_fff(ibif,c12)
+
+%%
 %%
 % fff = [in/out (c1), file#@process (c2), p#@ifile(c3), ifle#@ifile(4), p-class# (c5), ...
 %                               file#@iPack (c6), p#@iPack (c7), ifile#@iPack (c8), iBase#@iPack (c9)]

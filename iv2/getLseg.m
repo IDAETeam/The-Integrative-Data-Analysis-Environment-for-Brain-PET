@@ -46,14 +46,6 @@ function    [out1, out2] = getLseg(i1,i2, varargin);
 margin                          = 2;
 if nargin<margin;               helq(mfilename);                                    return;         end;
 % 
-flnval                          = 'off';
-pncval                          = ' ';
-n0                              = nargin;
-um_options;
-if ~OptionsOK;                                                                      return;         end;
-%
-if pncval(1)~=' ';              i1(i1==pncval(1))               = ' ';                              end;
-
 out2                            = '';
 % ~i2(1)
 if size(i1,1)==1 && ~i2(1);
@@ -61,6 +53,11 @@ if size(i1,1)==1 && ~i2(1);
 out1                            = '';
 if isempty(i1);                                                                     return;         end;
 
+flnval                          = 'off';
+pncval                          = ' ';
+n0                              = nargin;
+um_options;
+if ~OptionsOK;                                                                      return;         end;
 %
 flnflg                          = strncmp(lower(flnval),'on',2);
 

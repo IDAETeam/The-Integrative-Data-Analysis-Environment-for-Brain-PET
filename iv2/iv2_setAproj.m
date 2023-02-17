@@ -181,23 +181,26 @@ for i=1:1:ud.ns;
     set(jHs(3),                 'Style','edit',             'Tag',['pet',int2str(i),'_2']);
     set(jHs(4),                 'Style','edit',             'Tag',['pet',int2str(i),'_3']);         end;
 %
-jHs                             = postJBs(fH,               'B',bpos(end-2,:),[1;1]);
-set(jHs(1), 'Position',[bpos(end-2,1:3), bpos(end-2,4).*3], 'Style','text', 'Tag','infoB', ...
-    'FontName','Consolas', 'FontSize',10, 'HorizontalAlignment','left', 'String',   ...
-    {' 1. Select tracers of individual scans  from pulldown menu'
-    ' 2. Enter scan labels (no spaces) in the middle column'
-    ' 3. Enter short descriptions (spaces allowed) of the scans '
-    ' 4. Select the organization type and hit ''Move on'''});
+sss                             = ...
+    {   'Tracers: Select one from pulldown menu for individual scans',
+        'Labels: Short nicknames (several characters, no spaces) of the scans',
+        'Descriptions: Enter short descriptions of the scans'};
+for i=1:1:3;
+    ic                          = ic + 1;
+    jHs                         = postJBs(fH,               'B',bpos(ic,:),[1;1]);
+    set(jHs(1),                 'Style','text',             'String',sss{i});                       end;
 %
-jHs                             = postJBs(fH,               'B',bpos(end-1,:),[3,1;1,1]);
+ic                              = ic+1;
+jHs                             = postJBs(fH,               'B',bpos(ic,:),[3,1;1,1]);
 set(jHs(1),	'String','Select Study Log File',   'BackgroundColor',iv2_bgcs(6));
 set(jHs(2),	'Value',1, 	'Style','popupmenu',	'Tag','f2_L2_excelFile',                ...
                                 'CallBack','iv2_setAproj(''getfln'',[]);',  	        ...
                                 'String',{'Select one','One subject per line','One event per line'});
 %
-jHs                             = postJBs(fH,               'B',bpos(end,:),[1;1]);
-set(jHs(1),	'String','Move on', 'Tag','job_done',    'BackgroundColor',iv2_bgcs(12), ...
-                                'Enable','off', 'CallBack','iv2_setAproj(''check_input'',[]);');
+ic                              = ic+1;
+jHs                             = postJBs(fH,               'B',bpos(ic,:),[1;1]);
+set(jHs(1),	'String','Done! Move on',   'Tag','job_done',    'BackgroundColor',iv2_bgcs(12), ...
+                                'CallBack','iv2_setAproj(''check_input'',[]);');
 set(gcf,    'UserData',ud);
 return;
 %%
@@ -216,7 +219,6 @@ ud                              = get(gcf,  'UserData');
 [fname, path_x]                 = uigetfile(fullfile(ud.idx,'*'),'Select Study Log file');
 if isnumeric(fname);                                                                return;         end;
 %
-set(findobj(gcf, 'Tag','job_done'), 'Enable','on')
 ud.xls                          = [path_x, fname];
 set(gcf,    'UserData',ud);
 drawnow;
@@ -263,834 +265,122 @@ return;
 
 function                        local_select_items(h)
 %%
-%
-if ~isempty(findobj(groot, 'Name','Interpreter-1'))
-                                figure(findobj(groot, 'Name','Interpreter-1'));     return;         end
-%
 ud                              = get(gcf,  'UserData');
-% delete(gcf);
-a0                              = readcell(ud.xls);
+delete(gcf);
+a                               = readcell(ud.xls);
 %
-ccc                             = zeros(size(a0));
-for j=1:1:size(a0,2);
-    for i=1:1:size(a0,1);
-        ccc(i, j)               = ischar(a0{i,j}) + isnumeric(a0{i,j}).*2 + isdatetime(a0{i,j}).*3;
-        if ccc(i, j)<1;         a0{i, j}                    = ' ';                  end;    end;    end
-
+for i=1:1:size(a,2);
+    if ~ischar(a{1,i});         a{1,i}                      = '(missing)';                  end;    end;
 %
-a                               = a0(sum(ccc(:, ccc(1,:)==1),2)>0, ccc(1,:)==1);
-ud.ccc                          = ccc(sum(ccc(:, ccc(1,:)==1),2)>0, ccc(1,:)==1);
-%
-nc                              = ceil(size(a,2)./20);
+nc                              = ceil(size(a,2)./30);
 nr                              = ceil(size(a,2)./nc);
 %
-[fH, bpos]                      = bWindow([],   'nrs',nr+6,    'bwd',400.*nc,  'ttl','Interpreter-1');
-%
-set(gcf, 'MenuBar','none')
+[fH, bpos]                      = bWindow([],   'nrs',nr+2,    'bwd',400.*nc,  'ttl','Interpreter-1');
 % top row:
-bHs                             = postJBs(fH,   'B',bpos(1,:),[7,1;1,1]);
-set(bHs(1), 'String','Log file items (left/odd) & their values of 1st subject',   ...
+bHs                             = postJBs(fH,   'B',bpos(1,:),[1;1]);
+set(bHs(1), 'String','Check variables to transfer (even column(s): first inputs)',      ...
                                     'BackgroundColor',iv2_bgcs(2),  'FontWeight','bold');
-set(bHs(2), 'String','Done',  'BackgroundColor',iv2_bgcs(2), 'FontWeight','bold',  ...
-                                    'Callback','iv2_setAproj(''items2copy_done'',[]);');
 %
-%
-qHs                             = [];
 ss                              = reshape([1:1:nr.*nc]',nr,nc);
-ss(nr.*nc+1:end)                = 0;
-jc                              = 0;
+ss(ss>size(a,2))                = 0;
 for i=1:1:nr;
     bHs                         = postJBs(fH,   'B',bpos(i+1,:),ones(2,nc.*2));
-    qHs                         = [qHs; bHs];
     for j=1:1:nc;
-        jc                      = jc + 1;
-        if jc<=size(a,2);          
-            set(bHs((j-1).*2+1), 'String',[a{1,ss(i,j)},' (#',int2str(ss(i,j)),'#)'], ...
-                'Value',0, 'Style','radiobutton', 'CallBack','iv2_setAproj(''logitems2copy'',[]);'); 
+        if ss(i,j)>0;           
+            set(bHs((j-1).*2+1), 'String',a{1,ss(i,j)}, 'Value',0, 'Style','radiobutton'); 
             if ischar(a{2,ss(i,j)});
-                set(bHs((j-1).*2+2), 'String',a{2,ss(i,j)});
+                                set(bHs((j-1).*2+2), 'String',a{2,ss(i,j)});
             elseif isdatetime(a{2,ss(i,j)});
-                set(bHs((j-1).*2+2), 'String',string(a{2,ss(i,j)}));
+                                set(bHs((j-1).*2+2), 'String',string(a{2,ss(i,j)}));
             elseif isnumeric(a{2,ss(i,j)});
-                set(bHs((j-1).*2+2), 'String',num2str(a{2,ss(i,j)}));       end;    end;    end;    end
-% infoT:
-bHs                             = postJBs(fH,   'B',bpos(end-4,:),[7,1;1,1]);
-set(bHs(1), 'String','Information/Instruction Board', 'BackgroundColor',iv2_bgcs(6), ...
-                                'FontWeight','bold', 'Tag','infoT')
-set(bHs(2), 'String','Help', 'Enable','off', 'FontWeight','bold', 'BackgroundColor',iv2_bgcs(6));
-% infoB:
+                                set(bHs((j-1).*2+2), 'String',num2str(a{2,ss(i,j)}));       end;    end;
+                                                                                            end;    end;
+% bottom row:
 bHs                             = postJBs(fH,   'B',bpos(end,:),[1;1]);
-set(bHs(1), 'Position',[bpos(end,1:3), bpos(end,4).*4], 'Style','text', 'Tag','infoB', ...
-    'FontName','Consolas', 'FontSize',10, 'HorizontalAlignment','left', 'String',   ...
-    {'> Identify items to copy to IDAE database file'
-    ' - Hit an item to copy & select one from pulldown menu'
-    ' - Make sure to select ''study subject IDs'' and' 
-    '   ''group initials'' (item to use for this purpose)'
-    '> Hit ''Done'' @top-right when all are selected'});
-
+set(bHs(1), 'String','Hit this GUI when done', 'BackgroundColor',iv2_bgcs(6),  ...
+                'FontWeight','bold',    'Callback','iv2_setAproj(''interpreter'',[]);');
 %
-ud.qHs                          = qHs;
 ud.xls_var                      = a;
 set(gcf,    'UserData',ud);
-%
 return;
 %%
 
-function                        local_logitems2copy(h)
-%%
-%
-if get(gco, 'Value')<1;                                                             return;         end
-%
-ud                              = get(gcf, 'UserData');
-%
-%
-[rn, cn]                        = find(ud.qHs==gco);
-if ~strcmpi(get(ud.qHs(rn, cn+1),'Style'),'pushbutton');                            return;         end
-
-% recording IDAE's scanDB items (c3c; basic) and their labels (c3v):
-if ~isfield(ud,'c3c')
-    y                           = iv2_v4sdb(1);
-
-    c3strs                      = {'snm','g','age','sex','bw','mass','rad','sra'};
-    im3                         = umo_cstrs(char(y(:,1)), char(c3strs), 'im1');
-    ud.c3c                      = y(im3,    4);
-    ud.c3v                      = y(im3,    1);
-    ud.c3t                      = [1 1 1 1 2 2 2 2];
-    set(gcf, 'UserData',ud);                                                                        end
-%
-s1{1}                           = get(ud.qHs(rn, cn+1),'String');
-s1{2}                           = '* select one';
-for i=1:1:numel(ud.c3c);        s1{i+2}                     = ud.c3c{i};                            end
-%
-set(ud.qHs(rn, cn+1), 'Style','popupmenu', 'Value',1, 'String',s1);
-
-return
-%%
-
-function                        local_items2copy_done(h);
+function                        local_interpreter(h)
 %%
 ud                              = get(gcf,  'UserData');
-h0                              = gco;
-%
-res                             = nan(size(ud.qHs,1).*ceil(size(ud.qHs,2)./2), 4);
-jc                              = 0;              
-for i=1:2:size(ud.qHs,2)-1;
-    for j=find(cell2mat(get(ud.qHs(:,i), 'Value'))'>0 & ...
-            umo_cstrs('popupmenu',char(get(ud.qHs(:,i+1),'Style')),'im1')'>0);
-        jc                      = jc + 1;
-        jstr                    = get(ud.qHs(j,i), 'String');
-        k                       = find(jstr=='#');
-        
-        v                       = get(ud.qHs(j,i+1), 'Value');
-        s                       = get(ud.qHs(j,i+1), 'String');
-
-        res(jc, :)              = [str2double(jstr(k(end-1)+1:k(end)-1)),   ...
-                                    umo_cstrs(char(ud.c3c),s{v}, 'im1'),j,i]; 
-        if v<3;                 res(jc, 2)                  = 0;                    end;    end;    end
-% no popupmenu (any more?):
-if jc<1;
-    set(findobj(gcf, 'Tag','infoB'), 'String', ...
-        {'* Something must have gone wrong:'
-        '- Need to select (filled circle) items to copy, or'
-        '- No longer accessible (if green and/or orange GUIs)'});                   return;         end
-%
-% i2cp = [item #s = #No#; Line #s of ud.c3v, row #s & column # of ud.qHs]
-i2cp                            = res(1:1:jc, :);
-% 
-if any(i2cp(:,2)<1);
-    for j=find(i2cp(:,2)'<1);   
-        set(ud.qHs(i2cp(j,3),i2cp(j,4)+1), 'BackgroundColor',iv2_bgcs(11));
-        pause(0.5)
-        set(ud.qHs(i2cp(j,3),i2cp(j,4)+1), 'BackgroundColor',iv2_bgcs(0));                          end
-                                                                                    return;         end
-%
-%
-must_items                      = umo_cstrs(char(ud.c3v), char('snm ','g'), 'im1');
-s1{1}                           = '* Following ''must'' items are missing:';
-if ~any(i2cp(:,2)==must_items(1))
-    s1{2}                       = [' - Item of ',ud.c3c{must_items(1)}];                            end
-%
-if ~any(i2cp(:,2)==must_items(2));
-    s1{end+1}                   = [' - Item to get ',ud.c3c{must_items(2)}];                        end
-%
-if numel(s1)>1;
-    s1{end+1}                   = '> Identify above item(s) from left/odd columns';
-    set(findobj(gcf, 'Tag','infoB'), 'String',s1);                                  return;         end
-% 
-% disabling item radiobuttons > no more selection changes:
-set(findobj(gcf, 'Style','radiobutton'), 'CallBack',' ');
-%
-set(h0, 'Enable','off')
-ud.i2cp                         = i2cp;
-set(gcf, 'UserData',ud);
-%
-s2{1}                           = ' ';
-s2{2}                           = '* display one from below';
-s2{3}                           = 'Common to all PETs';
-for i=1:1:ud.ns;                s2{i+3}                     = ['PET #',int2str(i)];                 end
-for i=find(ud.c3t(i2cp(:,2))==1);
-    set(ud.qHs(i2cp(i,3),i2cp(i,4)+1), 'Style','pushbutton', 'Value',1, ...
-        'String',ud.c3c{i2cp(i,2)}, 'BackgroundColor',iv2_bgcs(16));                                end
-%
-%
-for i=find(ud.c3t(i2cp(:,2))==2);
-    s2{1}                       = ud.c3c{i2cp(i,2)};
-    set(ud.qHs(i2cp(i,3),i2cp(i,4)+1), 'Value',1, 'String',s2, 'BackgroundColor',iv2_bgcs(18));     end
-%
-set(findobj(gcf, 'Tag','infoB'), 'String', ...
-    {'* Specify if orange GUI items, if any are:'
-    ' - Specific to a PET scan, or'
-    ' - Common to all scans'
-    ' (additional help from ''Help'' GUIs)'
-    '> Hit ''Next'' when all are selected right'});
-%
-set(findobj(gcf, 'String','Help'), 'Enable','on', 'CallBack',['ud = get(gco, ''UserData''); ', ...
-    'set(gco,''Enable'',''off''); set(findobj(gcf,''Tag'',''infoB''), ''String'',ud);'], ...
-    'UserData',{'* No more changes to selections','> To make changes, close this module and', ...
-    '  hit ''Move on'' in ''Set Scans'' module','  (the inputs thus far will be lost)'})
-%
-set(h0, 'String','Next', 'Enable','on', 'Callback','iv2_setAproj(''items2copy_done_2'',[]);')
-return
-%%
-
-function                        local_items2copy_done_2(h);
-%%
-ud                              = get(gcf, 'UserData');
-h0                              = gco;
-%
-ps                              = zeros(size(ud.i2cp,1),1);
-ok                              = 1;
-% orange GUIs
-h18                             = findobj(gcf, 'BackgroundColor',iv2_bgcs(18));
-%                                
-for i=1:1:numel(h18);
-    [rn, cn]                    = find(ud.qHs==h18(i));
-    if get(h18(i), 'Value')<3;  set(h18(i), 'BackgroundColor',iv2_bgcs(11));
-                                pause(0.5)
-                                set(h18(i), 'BackgroundColor',iv2_bgcs(18));
-                                ok                          = 0;                                    end
-    ps(ud.i2cp(:,3)==rn & ud.i2cp(:,4)==cn-1, :)            = get(h18(i), 'Value')-3;               end
-%
-if ok<1;                                                                            return;         end
-
-ud.ps                           = ps;
-set(gcf, 'UserData',ud);
-%
-h_pum                           = findobj(gcf, 'Style','popupmenu');
-for i=1:1:numel(h_pum);         
-    s                           = get(h_pum(i), 'String');
-    set(h_pum(i), 'Style','pushbutton', 'Value',1, 'String',s{1});                                  end
-%
-set(findobj(gcf, 'Tag','infoB'), 'String', ...
-    {'* All set for study log items to copy' 
-    '  Next: Section of PET/MRI source files'
-    '> Hit ''Move on'' @top-right'
-    '- Not quite right? Delete this module and'
-    '  hit ''Move on'' in ''Set Scan'' module'});
-%
-set(h0, 'String','Move on', 'Callback','iv2_setAproj(''sort_groups'',[]);')
-return
-%%
-
-function                        local_source_search(h)
-%%
-% set(gco, 'Enable','off')
-%
-if ~isempty(findobj(groot, 'Name','Source search criteria generator'));
-    figure(findobj(groot, 'Name','Source search criteria generator'));              return;         end
-%
-ud                              = get(gcf,  'UserData');
-%
-ud.pet_search                   = {'Q:'  '#'  '#'  '$PETyymmdd$'};
-ud.mri_search                   = {'Q:'  '#'  '#'  '$MRIyymmdd$'};
-ud.pet_is_real_c                = {'Q:'  'e'  'EAT_HEALTHY_1170034'  'PET220121'  '152026'  'ima'};
-ud.mri_is_real_c                = {'Q:'  'e'  'EAT_HEALTHY_E100857131'  'MRI220120'  '001'  'dcm'};
-
-imp                             = umo_cstrs(['#*$&']',char(ud.pet_search), 'im1');
-imm                             = umo_cstrs(['#*$&']',char(ud.mri_search), 'im1');
-
-nr                              = sum([3, (1 + sum(imp>0)).*ud.ns, 1, sum(imm>0), 1,5, 1]);
-[fH, bpos]                      = bWindow([],   'nrs',nr,    'bwd',500,  ...
-                                                            'ttl','Source search criteria generator');
-%
-set(gcf, 'MenuBar','none')
-%
-ic                              = 0;
-for j=1:1:ud.ns;
-    ic                          = ic + 1;
-    bHs                         = postJBs(fH,   'B',bpos(ic,:),[4,1;1,1]);
-    set(bHs(1), 'String',['PET #',int2str(j),' (',deblank(ud.cMat(j, :)),')'], ...
-                                'FontWeight','bold', 'BackgroundColor',iv2_bgcs(2));
-    set(bHs(2), 'String','Test', 'Tag',['pet_',int2str(j),'_'], 'BackgroundColor',iv2_bgcs(2), ...
-        'FontWeight','bold', 'CallBack',['iv2_setAproj(''test_search'',''pet_',int2str(j),'_'');']);
-    for i=find(imp'>0)
-        ic                      = ic + 1;
-        bHs                     = postJBs(fH,   'B',bpos(ic,:),[2,3;1,1]);
-        set(bHs(1), 'String',['Path segment ',int2str(i)]);
-        set(bHs(2), 'Style','edit', 'String',ud.pet_search{i}, ...
-                                'Tag',['pet_',int2str(j),'_',int2str(i)]);                 end;    end
-%
-ic                              = ic + 1;
-bHs                             = postJBs(fH,   'B',bpos(ic,:),[4,1;1,1]);
-set(bHs(1), 'String','MRI', 'FontWeight','bold', 'BackgroundColor',iv2_bgcs(2));
-set(bHs(2), 'String','Test', 'Tag','mri_', 'BackgroundColor',iv2_bgcs(2), ...
-                            'FontWeight','bold', 'CallBack','iv2_setAproj(''test_search'',''mri_'');');
-%
-for i=find(imm'>0);
-    ic                          = ic + 1;
-    bHs                         = postJBs(fH,   'B',bpos(ic,:),[2,3;1,1]);
-    set(bHs(1), 'String',['Path segment ',int2str(i)]);
-    set(bHs(2), 'Style','edit', 'String',ud.mri_search{i}, 'Tag',['mri_',int2str(i)]);              end
-%
-ic                              = ic + 1;
-bHs                             = postJBs(fH,   'B',bpos(ic,:),[1;1]);
-set(bHs(1), 'String','User-selected examples of real paths in Image server',    ...
-                                'FontWeight','bold', 'BackgroundColor',iv2_bgcs(6));
-%
-ic                              = ic + 1;
-bHs                             = postJBs(fH,   'B',bpos(ic,:),[1,4;1,1]);
-set(bHs(1), 'String','PET');
-set(bHs(2), 'String',local_str2cell(ud.pet_is_real_c(1:numel(ud.pet_search))));
-%
-ic                              = ic + 1;
-bHs                             = postJBs(fH,   'B',bpos(ic,:),[1,4;1,1]);
-set(bHs(1), 'String','MRI');
-set(bHs(2), 'String',local_str2cell(ud.mri_is_real_c(1:numel(ud.mri_search))));
-%
-ic                              = ic + 1;
-bHs                             = postJBs(fH,   'B',bpos(ic,:),[1;1]);
-set(bHs(1), 'String','Information/Instruction Board', ...
-                                'FontWeight','bold', 'BackgroundColor',iv2_bgcs(6));
-%
-s1{1}                           = { 
-    '* Two-step approach for identification of PET & MRI source files'
-    ' 1. To build search criteria separately for PET and MRI'
-    '    by editing shown path segments (fixed segments not shown)'
-    ' 2. To identify the right source files using the file navigator'
-    '    after selecting the correct starting point from Step 1'
-    '> Edit lines with # and $ as shown in next pages (hit Help)'};
-s1{2}                            = { 
-    ' - Study path segments of above PET & MRI example paths'
-    ' - Study how each segment are built from which study-log'
-    '   file itesms shown in Interpreter-1 module (=#No#)'
-    '* Edition instructions for lines starting # or $:'
-    '> Replace $whatever$ with #No# of date of service, if any'};
-s1{3}                            = { 
-    '> Replace # with a string with #No#s as follows:'
-    ' - Try to include minimal #s of characters of log file items'
-    '   to suffer less from human errors, if any'
-    '   e.g., #No#(3:4) to extract 3rd & 4th characters of #No# '
-    ' - *, _, lower, and/or upper may be used with #No#s'};
-s1{4}                            = { 
-    '   for examples entering upper(#12#(1))*_lower(#15#(2:3))* '
-    '   will return A*_cd*, taking specified characters from #No#s'
-    ' - Enter * or a string to fix the segment to it'
-    '> Hit ''Test'' once all segments are done for a PET or MRI'
-    ' - No worries. This module won''t crush even in cases of errors'};
-s1{5}                            = { 
-    ' - Note insufficient entries will be indicated by pink blinks'
-    '* Current search string  & # of hits will be indicated '
-    ' - Current search string will be accepted if # of hits < 5'
-    '   (no more changes are not allowed)'
-    ' - Follow the messages until the string is accepted'};
-s1{end+1}                       = 1;
-%
-bHs                             = postJBs(fH,   'B',bpos(end-1,:),[1;1]);
-set(bHs(1), 'Position',[bpos(end-1,1:3),(bpos(1,4)+1).*5-2], 'Style','text', 'Tag','infoB',   ...
-    'FontName','Consolas', 'FontSize',10, 'HorizontalAlignment','left', 'String',s1{1})
-%
-bHs                             = postJBs(fH,   'B',bpos(end,:),[1,2,1;1,1,1]);
-set(bHs(1), 'String','Help', 'UserData',s1, 'FontWeight','bold', ...
-    'BackgroundColor',iv2_bgcs(2), 'Callback',         ...
-    ['ud = get(gco,''UserData''); ud{end} = ud{end}+1; if ud{end}>=numel(ud); ud{end} = 1; end; ',  ...
-    'set(gco, ''UserData'',ud); set(findobj(gcf,''Tag'',''infoB''),''String'',ud{ud{end}});']);
-%
-set(bHs(2), 'String','Display help messages', 'FontWeight','bold', ...
-    'BackgroundColor',iv2_bgcs(2), 'Callback', ...
-    ['ud = get(findobj(gcf, ''String'',''Help''), ''UserData''); disp(''*** Help messages of ', ...
-    'Search Criterial Generator ***''); for i=1:1:numel(ud)-1; disp(char(ud{i})); end;',        ...
-    ' disp(''< end of the help messages'');']);
-set(bHs(3), 'String','Done', 'Enable','off', 'Tag','bottom_right', ...
-                                'FontWeight','bold','BackgroundColor',iv2_bgcs(2));
-%
-set(gcf, 'UserData',ud);
-return;
-%%
-
-function                        local_test_search(h)
-%%
-ud                              = get(gcf, 'UserData');
-%
-if strcmpi(h(1:3),'pet');       
-    if ~isfield(ud,'pet_search_t');
-        for i=1:1:ud.ns;        ud.pet_search_t{i}          = ' ';                          end;    end
-    pet_c                       = getLseg(h, [0,2], 'pnc','_');
-    ud.pet_search_t{str2num(pet_c{2})}  ...
-                                = local_test_search_xxx(h,ud.pet_search,ud.xls_var(2,:));
-else;                           
-    ud.mri_search_t             = local_test_search_xxx(h,ud.mri_search,ud.xls_var(2,:));             end
-% eval(['local_test_search_',h(1:3),'(h);']);
-
-set(gcf, 'UserData',ud)
-%
-check_done                      = char(zeros(1 + ud.ns, 4) +32);
-for i=1:1:ud.ns;
-    check_done(i, :)            = get(findobj(gcf, 'Tag',['pet_',int2str(i),'_']), 'String');       end
-%
-check_done(end, :)              = get(findobj(gcf, 'Tag','mri_'), 'String');
-im1                             = umo_cstrs('Done', check_done, 'im1');
-if ~any(im1<1);
-    set(findobj(gcf, 'Tag','bottom_right'), 'Enable','on', ...
-                                'CallBack','iv2_setAproj(''test_search_done'',[]);');               end
-return
-%%
-
-function    search_t            = local_test_search_xxx(h,xxx_search,r2)
-%%
-h_c                             = getLseg(h,[0,2],'pnc','_');
-imp                             = umo_cstrs(('#$')',char(xxx_search), 'im1');
-%
-search_t                        = xxx_search;
-%
-ok                              = ones(size(imp));
-for i=find(imp'>0);
-    search_t{i}                 = get(findobj(gcf, 'Tag',[h,int2str(i)]), 'String');
-    ok(i, :)                    = sum(search_t{i}=='#');
-    if (ok(i)>0 && floor(ok(i)./2)~=ceil(ok(i)./2)) || any(search_t{i}=='$')
-        set(findobj(gcf, 'Tag',[h,int2str(i)]), 'BackgroundColor',iv2_bgcs(11));
-        pause(0.5)
-        set(findobj(gcf, 'Tag',[h,int2str(i)]), 'BackgroundColor',iv2_bgcs(0));     
-        ok(i, :)                = 0;                                                            
-    else;                       ok(i, :)                    = 1;                            end;    end
-%
-% disp(char(search_t))
-if any(ok<1);                                                                       return;         end
-[search_i, ok]                  = local_convert_sseg(xxx_search,search_t,r2);
-%
-if any(ok<1);
-    for i=find(ok'<1);
-        set(findobj(gcf, 'Tag',[h,int2str(i)]), 'BackgroundColor',iv2_bgcs(11));
-        pause(0.5)
-        set(findobj(gcf, 'Tag',[h,int2str(i)]), 'BackgroundColor',iv2_bgcs(0));                     end
-                                                                                    return;         end
-%
-sstr                            = local_str2cell(search_i);
-
-if numel(h_c)>1;                jstr                        = [upper(h_c{1}),' #',h_c{2}];
-else;                           jstr                        = upper(h_c{1});                        end
-%
-dxs                             = dir(sstr);
-if isempty(dxs);
-
-        set(findobj(gcf, 'Tag','infoB'), 'String', ...
-            {['* Current path search string for ',jstr,' of the 1st subject:']
-            ['   ',sstr]
-            '  has returned no search starting point(s)'
-            '> Modify the rules (missing *?) & hit ''Test'''
-            '> Also check the entries in the study log file (no mistakes?)'});
-else;
-    cm1                         = umo_cstrs(char(dxs.folder),[], 'cm1');
-    if sum(cm1(:,2)>0)<5;
-        set(findobj(gcf, 'Tag','infoB'), 'String', ...
-            {['* Current path search string for ',jstr,' of the 1st subject:']
-            ['   ',sstr]
-            ['  has returned ',int2str(sum(cm1(:,2)>0)),' search starting point(s)']
-            '> Acceptably good. '
-            ['  Current rules will be applied to all ',jstr,' of this study'] 
-            '  (the rules are still modifiable)'});
-        set(findobj(gcf, 'Tag',h), 'String','Done');
-    else
-        set(findobj(gcf, 'Tag','infoB'), 'String', ...
-            {['* Current path search string for ',jstr,' of the 1st subject:']
-            ['   ',sstr]
-            ['  has returned ',int2str(sum(cm1(:,2)>0)),' search starting point(s)']
-            '- Better to reduce # of hits < 5 ' ...
-            '> Modify the rules & hit ''Test'''});                                          end;    end
-%
-return;
-%%
-
-function    [out, ok]           = local_convert_sseg(search_c,search_t,r2)
-%%
-ok                              = ones(numel(search_t), 1);
-out                             = search_c;
-im1                             = umo_cstrs(['#';'$'], char(search_c), 'im1');
-% 
-for i=find(im1'==2);
-    if isdatetime(r2{1,str2num(search_t{i}(search_t{i}~='#'))})
-        jstr                    = search_c{i}(1,2:1:end-1);
-        dstr                    = jstr;
-        jstr(:)                 = replace(jstr,'yyyy','@@@@');
-        jstr(:)                 = replace(jstr,'yy','@@');
-        jstr(:)                 = replace(jstr,'mm','@@');
-        jstr(:)                 = replace(jstr,'dd','@@');
-
-        dnum                    = datetime(r2{1,str2num(search_t{i}(search_t{i}~='#'))});
-        if ~isempty(dnum);      dstr(jstr=='@')             = datestr(dnum, dstr(jstr=='@'));
-                                out{i}                      = dstr;
-        else;                   ok(i, :)                    = 3;
-                                out{i}                      = 'not entered yet';                    end
-    else;                       ok(i, :)                    = 0;    
-                                out{i}                      = 'not in date format';         end;    end
-%
-for i=find(im1'==1)
-    jjj                         = nan(size(search_t{i}));
-    k                           = find(search_t{i}=='#');
-    for j=1:2:length(k);        jjj(:, k(j):k(j+1))         = 1;                                    end
-    %
-    ppp                         = nan(size(jjj));
-    ppp(:, search_t{i}=='(')    = 3;
-    ppp(:, search_t{i}==')')    = 4;
-    % ) is present - chcking if ( and ) are paired:
-    if any(ppp==4)
-        k                       = find(ppp==4);
-        for j=1:1:length(k);
-            kL                  = find(ppp(1, 1:k(j))==3,1,'last');
-            % no paring left parentheses:
-            if isempty(kL);     ok(i, :)                    = 0;
-            else;
-                if ~any(jjj(1, kL+1:k(j)-1)>0);
-                    ppp(1, kL:k(j))                         = 2;                    end;    end;    end
-        jjj(~isnan(ppp))        = ppp(~isnan(ppp));                                                 end
-    %
-    jjj(:, search_t{i}=='*' | search_t{i}=='_')             = 5;
-    %
-    jstr                        = search_t{i};
-    jstr(:)                     = replace(jstr,'lower','@@@@@');
-    jjj(:, jstr=='@')           = 6;
-    jstr(:)                     = replace(jstr,'upper','^^^^^');
-    jjj(:, jstr=='^')           = 7;
-    if any(isnan(jjj));         ok(i, :)                    = 0;                                    end
-    if numel(find(search_t{i}=='('))~=numel(find(search_t{i}==')'))
-                                ok(i, :)                    = 0;                                    end
-    %
-    if ok(i,1)>0;
-        %
-        ppp(:)                  = jjj;
-        qqq                     = char(zeros(size(jjj))+32);
-        cc                      = zeros(size(jjj,2), 3);
-        %
-        ic                      = 0;
-        while 1
-            k                   = find(ppp>0, 1);
-            if isempty(k);                                                          break;          end
-            %
-            ic                  = ic + 1;
-            if ic>100;          ok(i, :)                    = 0;                    break;          end;
-            %
-            qqq(:)              = ' ';
-            qqq(:, ppp==ppp(k))                             = 'a';
-            c1                  = getLseg(qqq, 1);
-            cc(ic, :)           = [jjj(k), k, k+size(c1,2)-1];
-            ppp(1, 1:cc(ic, 3)) = 0;                                                                end
-        %
-        if ok(i,1)>0;
-            %
-            estr                = 'out{i}      = [';
-            for j=find(cc(:,1)'>0);
-                % variables from the study log file:
-                if cc(j,1)==1;
-                    estr        = [estr,'r2{1,',jstr(cc(j,2)+1:cc(j,3)-1),'}'];
-                % segments within parentheses:
-                elseif cc(j,1)==2;
-                    estr        = [estr,jstr(cc(j,2):cc(j,3))];
-                elseif cc(j,1)==3;
-                    estr        = [estr,'('];
-                elseif cc(j,1)==4;
-                    estr        = [estr,')'];
-                % * and/or _:
-                elseif cc(j,1)==5;
-                    estr        = [estr,',''',jstr(cc(j,2):cc(j,3)),''','];
-                % lower:
-                elseif cc(j,1)==6;
-                    estr        = [estr,'lower'];
-                elseif cc(j,1)==7;
-                    estr        = [estr,'upper'];                                           end;    end
-            if estr(end)==',';  estr                        = estr(1, 1:end-1);                     end
-            eval([estr,'];']);                                                      end;    end;    end
-%
-return;
-%%
-
-function                        local_test_search_done(h)
-%%
-ud                              = get(gcf, 'UserData');
-if ~exist(fullfile(ud.idx,ud.ipj_name,'database'),'dir');
-                                mkdir(fullfile(ud.idx,ud.ipj_name,'database'));                     end
-%
-copyfile(ud.xls, fullfile(ud.idx,ud.ipj_name,'database'))
-%
-[jdx, jnm, jex]                 = fileparts(ud.xls);
-ud.xls                          = fullfile(ud.idx,ud.ipj_name,'database', [jnm,jex]);
-%
-save(fullfile(ud.idx,ud.ipj_name,'database', [ud.ipj_name,'_database_info.mat']), 'ud')
-
-%
-delete(findobj(groot, 'Name','Source search criteria generator'));
-%
-figure(findobj(groot, 'Name','Interpreter-1'));
-%
-set(gcf, 'UserData',ud);
-%
-set(findobj(gcf, 'Tag','infoB'), 'String', ...
-    {'* The search criteria were saved for later use'
-    '  Next: Identify/convert PET & MRI souece files'
-    '        up to 3 subjects at a time'
-    '> Hit ''Move on'' @top-right to start'});
-%
-set(findobj(gcf, 'String','Move on'), 'Enable','on', ...
-                                'CallBack','iv2_setAproj(''search_source_files'',[]);');
-%
-return
-%%
-
-function                        local_sort_groups(ud)
-%%
-if isempty(ud);                 ud                          = get(gcf, 'UserData');                 end
-%
-set(gco, 'Enable','off');
-%
-set(findobj(gcf, 'Tag','infoB'), 'String', ...
-    {'* Sorting out group initials'
-    '> work on ''Group initials'' module that pops up'});
-%
-ii                              = find(ud.ccc(2:end, ud.i2cp(ud.i2cp(:,2)==1,1))==1) +1;
-% snm                             = char(ud.xls_var(ii,  ud.i2cp(ud.i2cp(:,2)==1,1)));
-gstrs                           = char(ud.xls_var(ii,  ud.i2cp(ud.i2cp(:,2)==2,1)));
-cmg                             = umo_cstrs(gstrs,[],'cm1');
-
-[fH, bpos]                      = bWindow([],   'nrs',1+sum(cmg(:,2)>0)+3,  'bwd',600);
-set(gcf, 'Name','Group initials', 'MenuBar','none');
-% 
-bHs                             = postJBs(fH,   'B',bpos(1,:),[3,1,4;1,1,1]);
-set(bHs(1), 'String','Group Strings', 'FontWeight','bold', 'BackgroundColor',iv2_bgcs(2))
-set(bHs(2), 'String','i', 'FontWeight','bold', 'BackgroundColor',iv2_bgcs(2));
-set(bHs(3), 'String','Group Descriptions', 'FontWeight','bold', 'BackgroundColor',iv2_bgcs(2))
-%
-ibHs                            = [];
-ic                              = 1;
-for i=find(cmg(:,2)'>0);
-    ic                          = ic + 1;
-    bHs                         = postJBs(fH,   'B',bpos(ic,:),[3,1,4;1,1,1]);
-    ibHs                        = [ibHs; bHs];
-    set(bHs(1), 'String',deblank(gstrs(i, :)), 'Tag',['left_',int2str(ic)])
-    set(bHs(2), 'String',' ', 'Style','edit',  'Tag',['middle_',int2str(ic)])
-    set(bHs(3), 'String',' ', 'Style','edit',  'Tag',['right_',int2str(ic)]);                       end
-%
-bHs                             = postJBs(fH,   'B',bpos(end,:),[6,1;1,1]);
-set(bHs(1), 'Position', bpos(end,:).*[1,1,1,3], 'Style','text', 'FontName','Consolas', ...
-    'FontSize',10, 'HorizontalAlignment','left', 'String', ...
-    {'* Group descriptions from the study log file (left)'
-    '> Enter group initials in middle column GUIs'
-    '  Enter additional group definitions on right GUIs, if desired'
-    '> Hit ''Done'' when done'})
-set(bHs(2), 'String','Done', 'CallBack','iv2_setAproj(''groups_done'',[]);', ...
-    'UserData',ibHs, 'FontWeight','bold', 'BackgroundColor',iv2_bgcs(6));
-
-
-function                        local_groups_done(h);
-%%
-bHs                             = get(findobj(gcf, 'String','Done'), 'UserData');
-%
-gMat                            = char(get(bHs(:,1), 'String'));
-gini                            = repmat(' ',size(bHs,1),1);
-for i=1:1:size(bHs,1);
-    m_input                     = get(bHs(i, 2), 'String');
-    m_input                     = m_input(m_input~=' ');
-    if size(m_input,2)>0;       gini(i, :)                  = upper(m_input(1));
-    else;                       gini(i, :)                  = ' ';
-                                set(bHs(i, 2), 'BackgroundColor',iv2_bgcs(11));
-                                pause(0.5)
-                                set(bHs(i, 2), 'BackgroundColor',iv2_bgcs(0));                      end
-    %
-    r_input                     = get(bHs(i, 3), 'String');
-    if isempty(r_input) || isempty(r_input(r_input~=' '));
-        gDescrip{i}             = deblank(gMat(i,:));
-    else;
-        r_input                 = deblank(r_input);
-        r_input                 = deblank(r_input(end:-1:1));
-        gDescrip{i}             = r_input(end:-1:1);                                        end;    end
-%
-if any(gini==' ');                                                                  return;         end
-%
+v                               = cell2mat(get(findobj(gcf, 'Style','radiobutton'), 'Value'));
+s                               = get(findobj(gcf, 'Style','radiobutton'), 'String');
+im1                             = umo_cstrs(char(s(v>0)), char(ud.xls_var(1,:)), 'im1');
 delete(gcf);
-figure(findobj(groot, 'Name','Interpreter-1'));
 %
-ud                              = get(gcf, 'UserData');
-ud.gMat                         = gMat;
-ud.gini                         = gini(:, 1);
-ud.gDescrip                     = char(gDescrip);
-set(gcf, 'UserData',ud);
+[fH, bpos]                      = bWindow([],   'nrs',sum(im1>0)+2,    'bwd',840,  'ttl','Interpreter-2');
 %
-local_sort_i2cp(ud)
-return
-%%
+% Top row:
+ic                              = 1;
+bHs                             = postJBs(fH,   'B',bpos(ic,:),[1;7]);
+r1c                             = {'Study Log', '1st inputs', 'Basic', ...
+                                   	'Generic C','Generic B','Generic T','PET # etc'};
+set(bHs,    'BackgroundColor',iv2_bgcs(1),  'FontWeight','bold');
+for i=1:1:numel(bHs);           set(bHs(i), 'String',r1c{i});                                     	end;
+%
+% Main GUI matrix:
+for i=find(im1'>0);
+    ic                          = ic + 1;
+    bHs                      	= [bHs; postJBs(fH, 'B',bpos(ic,:),[1;7])];
+    set(bHs(ic,1),  'String',ud.xls_var{1, i});
+    if ischar(ud.xls_var{2, i});
+                                set(bHs(ic,2),  'String',ud.xls_var{2, i});
+    elseif isdatetime(ud.xls_var{2, i});
+                                set(bHs(ic,2),  'String',string(ud.xls_var{2, i}));
+    elseif isnumeric(ud.xls_var{2, i});
+                                set(bHs(ic,2),  'String',num2str(ud.xls_var{2, i}));        end;    end;
+%
+y                               = iv2_v4sdb(1);
 
-function                        local_sort_i2cp(ud)
-%%
-ii                              = find(ud.ccc(2:end, ud.i2cp(ud.i2cp(:,2)==1,1))==1) +1;
-snm                             = char(ud.xls_var(ii,  ud.i2cp(ud.i2cp(:,2)==1,1)));
-%
-d2w                             = ones(1, size(ud.i2cp,1));
-d2w(:, ud.i2cp(:,2)<3)          = 0; 
-cm1                             = umo_cstrs(int2str(ud.i2cp(:,2)),[], 'cm1');
-cm1(d2w<1, 2)                   = 0;
-%
-for i=find(cm1(:,2)'>0);
-    if cm1(i,2)<2;
-        if ud.ccc(ii(1), ud.i2cp(i,1))==1;
-            eval(['v.',ud.c3v{ud.i2cp(i,2)},'               = char(ud.xls_var(ii, ud.i2cp(i,1)));'])
-        else;
-            eval(['v.',ud.c3v{ud.i2cp(i,2)},'               = cell2mat(ud.xls_var(ii, ud.i2cp(i,1)));'])
-        end;
-    else;
-        eval(['v.',ud.c3v{ud.i2cp(i,2)},'                   = nan(size(ii,1),cm1(i,2));'])
-        for j=find(cm1(:,1)==cm1(i,1));
-            eval(['v.',ud.c3v{ud.i2cp(i,2)},'(:,ud.ps(j))   = cell2mat(ud.xls_var(ii, ud.i2cp(j,1)));'])
-                                                                                    end;    end;    end
-%
-if isfield(v,'sex');            v.sex                       = upper(v.sex(:,1));                    end;
-%
-if ~exist(fullfile(ud.idx,ud.ipj_name,'database'),'dir');
-                                mkdir(fullfile(ud.idx,ud.ipj_name,'database'));                     end
-%
-save(fullfile(ud.idx,ud.ipj_name,'database', [ud.ipj_name,'_scanDB.mat']), 'snm', 'v');
-%
-set(findobj(gcf, 'Tag','infoB'), 'String', ...
-    {'* Specified items are safely saved in scanDB.mat'
-    '  Next: To build search criteria for '
-    '        PET] & MRI source files'
-    '> Work on the new module that pops up'});
-%
-local_source_search(ud);
-return
-%%
+c3strs                          = {'snm','g','age','sex','bw','mass','rad','sra','doseS','PK','blocker'};
+im3                             = umo_cstrs(char(y(:,1)), char(c3strs), 'im1');
+c3c                             = y(im3,    4);
+c3c{end+1}                      = 'PET date';
+c3c{end+1}                      = 'MRI date';
+ud.c3c                          = c3c;
+% 'snm','g','age','sex' alone are all scan-independent:
+ud.c3p                          = ones(1, numel(c3c));
+ud.c3p(:, 1:4)                  = 0;
 
-function                        local_disp_xls_var(bHs,r2)
-%% to display i-th subject's study log entries to even GUIs
-%
-jc                              = 0;
-for j=2:2:size(bHs,2);
-    for i=1:1:size(bHs,1);
-        jc                      = jc + 1;
-        if jc<=size(r2,2);      
-            if isnumeric(r2{jc});  
-                                set(bHs(i,j), 'String',num2str(r2{jc})); 
-            else;               set(bHs(i,j), 'String',char(r2{jc}));       end;    end;    end;    end
+im4                             = umo_cstrs(char(y(:,1)), 'cD', 'im1');
+ud.c4c                        	= y(im4,    4);
+
+im5                             = umo_cstrs(char(y(:,1)), 'bD', 'im1');
+ud.c5c                        	= y(im5,    4);
+
+im6                             = umo_cstrs(char(y(:,1)), 'tD', 'im1');
+ud.c6c                        	= y(im6,    4);
+
+set(bHs(2,3),   'Value',1,  'Style','popupmenu',    'String',ud.c3c,   ...
+                                'CallBack','iv2_setAproj(''set_rows'',[]);');
+set(bHs(2,4),   'Value',1,  'Style','popupmenu',    'String',ud.c4c,   ...
+                                'CallBack','iv2_setAproj(''set_rows'',[]);');
+set(bHs(2,5),   'Value',1,  'Style','popupmenu',    'String',ud.c5c,   ...
+                                'CallBack','iv2_setAproj(''set_rows'',[]);');
+set(bHs(2,6),   'Value',1,  'Style','popupmenu',    'String',ud.c6c,   ...
+                                'CallBack','iv2_setAproj(''set_rows'',[]);');
 % 
-return
-%%
-
-function                        local_search_source_files(ii);
-%%
-ud                              = get(gcf,  'UserData');
-h0                              = gco;
-set(gco, 'Enable','off')
-
-if ~exist(fullfile(ud.idx,ud.ipj_name,'database'),'dir');
-                                mkdir(fullfile(ud.idx,ud.ipj_name,'database'));                     end
-
-out                             = dir(fullfile(ud.idx,ud.ipj_name,'database', ...
-                                        [ud.ipj_name,'_source_files_*.mat']));
-if ~isempty(out);
-    out_char                    = char(out.name);
-    out_check                   = char(out_char(:, size([ud.ipj_name,'_source_files_*'],2):end),' ');
-else;              
-    out_check                   = ' ';                                                              end
-%
-im1                             = umo_cstrs(out_check, ...
-                                char(ud.xls_var(2:end, ud.i2cp(find(ud.i2cp(:,2)==1,1), 1))), 'im1');
-%
-ii                              = find(im1'<1) + 1;
-if isempty(ii);
-    set(findobj(gcf, 'Tag','infoB'), 'String', ...
-        {'* No more PET & MRI source files to work on for now'
-        '> Hit ''Quit'' @top-right safely'});
-    set(h0, 'String','Quit', 'Enable','on', 'CallBack','delete(gcf);');             return;         end
-%
-h2                              = findobj(gcf, 'Tag','infoB');
-%
-for i=ii(1:1:min([3,numel(ii)]));
-    % revising study log entries for i-th subject:
-    if i>2;                     local_disp_xls_var(ud.qHs,ud.xls_var(i,:));                         end;
-
-    snm                         = ud.xls_var{i,ud.i2cp(ud.i2cp(:,2)==1,1)};
-    set(h2, 'String', ['* Working on Subject: ',snm]);
-    %
-    clear pet_sfl;
-    for k=1:1:ud.ns;
-        [search_i, ok]          = local_convert_sseg(ud.pet_search,ud.pet_search_t{k},ud.xls_var(i,:));
-        pet_sfl{k}              = local_get_source_file(search_i,ok,['PET #',int2str(k)],snm);      end;
-    %
-    %
-    [search_i, ok]              = local_convert_sseg(ud.mri_search,ud.mri_search_t,ud.xls_var(i,:));
-    mri_sfl                     = local_get_source_file(search_i,ok,'MRI',snm); 
-    %
-    save(fullfile(ud.idx,ud.ipj_name,'database', [ud.ipj_name,'_source_files_',snm,'.mat']), ...
-                                                            'snm', 'mri_sfl', 'pet_sfl');           
-    set(h2, 'String',['* Done for: ',snm]);                                                         end
-%
-set(h2, 'String',...
-    {'* IDAE''s database file is being generated/updated'
-    ['   output: ',ud.ipj_name,'_scanDB.m']
-    ['   folder: ',fullfile(ud.idx,ud.ipj_name)]
-    '> Be patient'})
-%
-return      
-%%
-
-
-function    out_sfl             = local_get_source_file(search_i,ok,pom,snm)
-%%
-if any(ok<1);                   out_sfl                     = '?';                  return;         end
-                                
-h1                              = findobj(gcf, 'Tag','infoT');
-h2                              = findobj(gcf, 'Tag','infoB');
-
-idx                             = dir(local_str2cell(search_i));
-cm1                             = umo_cstrs(char(idx.folder),[],'cm1');
-% one starting folder:
-if sum(cm1(:,2)>0)==1;
-    cd(idx(cm1(:,2)>0).folder)
-    [fname, path_i]             = uigetfile('*',['Pick a ',pom,' source file for: ',snm]);
-    if ischar(fname);           out_sfl                     = fullfile(path_i,fname);
-    % when canceled:
-    else;                       out_sfl                     = '?';                                  end
+% bottom row GUIs
+jHs                             = postJBs(fH,   'B',bpos(end,:),[6,1;1,1]);
+set(jHs(1),     'String','Assign one from Basic / Generic column to each of Column 1',      ...
+                    'BackgroundColor',iv2_bgcs(6),  'FontWeight','bold',    'Tag','bottom_left');
+set(jHs(2),     'String','Done',    'CallBack','iv2_setAproj(''input_done'',[]);',          ...
+                    'BackgroundColor',iv2_bgcs(6),  'FontWeight','bold',    'Tag','bottom_right');
+ud.bHs                          = bHs;
+set(gcf,    'UserData',ud);
 % 
-% when more than 1 potential starting points:
-elseif sum(cm1(:,2)>0)>1; 
-    clear s1;
-    s1{1}                       = ['Select the starting folder for ',pom,' of: ',snm];
-    jc                          = 1;
-    for j=find(cm1(:,2)'>0);    jc                          = jc + 1;
-                                s1{jc}                      = [' ',idx(j).folder];                  end
-    %
-    set(h1, 'Value',1, 'Style','popupmenu', 'String',s1);
-    set(h2, 'String', ...
-        {'> Select ''correct'' starting folder',
-        ['  for ',pom,' of:',snm]
-        '  from above pulldown menu'});
-    % wait until a selection is done
-    waitfor(h1, 'Value')
-    %
-    set(h1, 'Value',1, 'Style','pushbutton', 'String','Information/Instruction Board')
-    set(h2, 'String', ' ');
-
-    cd(s1{get(h1,'Value')}(2:end))
-    %
-    [fname, path_i]             = uigetfile('*',['Pick a ',pom,' source file for: ',snm]);
-
-    if ischar(fname);           out_sfl                     = fullfile(path_i,fname);
-    else;                       out_sfl                     = '?';                                  end
-else;                           out_sfl                     = '2';                                  end
+m                               = uimenu('Text','Open manual');
+set(m,'MenuSelectedFcn','iv2_setAproj(''open_manual'',[]);');
 %
+m2                              = uimenu('Text','Open Log');
+set(m2,'MenuSelectedFcn','iv2_setAproj(''open_study_log'',[]);');
 return;
 %%
-% keydown = waitforbuttonpress;
-% get(gco,'String')
-% 
-% waitfor(gco, 'Value')
-% get(gco, 'Value')
 
 function                        local_open_manual(h);
 %%
@@ -1205,17 +495,10 @@ for i=3:1:6;
                                 set(ud.bHs(qqq(:,i)<1,i), 'BackgroundColor',iv2_bgcs(0));
     else;
         qqq(:, i)               = umo_cstrs(char(y(:,4)), char(get(ud.bHs(:, i),'string')), 'im1');
-                                                                                            end;    end
-%
-must_check                      = umo_cstrs(char(y(qqq(qqq(:,3)>0,3),1)),char('snm ','g'), 'im1');
-if any(must_check<1);
-    set(findobj(gcf, 'Tag','infoB'), ...
-        'String','Must items (subject ID & group initials) missing.');              return;         end
-
-% if i==3;
-%             imx                 = umo_cstrs(['MRI date';'PET date'], ...
-%                                                             char(get(ud.bHs(:, i),'string')), 'im1');
-%             qqq(imx>0, i)       = imx(imx>0).*1000;                                 end;    end;    end;
+        if i==3;
+            imx                 = umo_cstrs(['MRI date';'PET date'], ...
+                                                            char(get(ud.bHs(:, i),'string')), 'im1');
+            qqq(imx>0, i)       = imx(imx>0).*1000;                                 end;    end;    end;
 %
 % 
 ppp                             = zeros(size(qqq,1)-1, 2);
@@ -1423,62 +706,23 @@ function                        local_gen_scandb(ud);
 %             for k=1:1:ud.ns;
                 
 
-if exist(ud.sdb,'file');        local_update_scandb(ud);                            return;         end
 
-%
-sfls                            = dir(fullfile(ud.idx,ud.ipj_name,'database', ...
-                                                            [ud.ipj_name,'_source_files_*.mat']));
-if isempty(sfls);
-    set(findobj(findobj(groot, 'Name','Interpreter-1'), 'Tag','infoB'), 'String', ...
-        '* Problem! Files of PET/MRI source files are not ready');                  return;         end
-%
-sfls_char                       = char(sfls.name);
-snm                             = ud.xls_var(2:end, ud.i2cp(ud.i2cp(:,2)==1,1))
-im1                             = umo_cstrs(sfls_char(:, ...
-                                    size([ud.ipj_name,'_source_files_*'],2):end-4), char(snm), 'im1');
-% sorting out group initials:
-g_entries                       = char(ud.xls_var(2:end, ud.i2cp(ud.i2cp(:,2)==2,1)));
-gm1                             = umo_cstrs(ud.gMat, g_entries, 'im1');
-ginis                           = char(zeros(size(gm1,1),1)+abs('?'));
-ginis(gm1>0, :)                 = ud.gini(gm1(gm1>0));
+
 
 fH                              = fopen(ud.sdb,         'w');
-if fH<0;                        disp(['.error! unable to create: ',ud.sdb]);        return;         end
+if fH<0;                        disp(['.error! unable to create: ',ud.sdb]);        return;         end;
 %
-mri                             = 1 - double(strcmpi(ud.mri(1:2),'no'));
-hrrt                            = double(strcmpi(ud.pet(1:4),'crop'));
+mri                             = int2str(strcmpi(ud.q4,'yes'));
+hrrt                            = int2str(strcmpi(ud.q3(1:4),'hrrt'));
 fwrite(fH,  ['% created by ',mfilename,' (',datestr(now,'mm/dd/yyyy @HH:MM:SS'),')',10,'% ',10],'char');
 fwrite(fH,  ['lds     ',ud.lds,10,'mri     ',mri,10,'hrr     ',hrrt,10],    'char');
-fwrite(fH,  ['ham     ',lower(ud.species(1)),10,'% PET scan descriptions ',10],  'char');
+fwrite(fH,  ['ham     ',lower(ud.q2(1)),10,'% PET scan descriptions ',10],  'char');
 % copying PET condition lines:
 for i=1:1:ud.ns;
-    fwrite(fH,  ['cnd',int2str(i),'    ',ud.cMat(i, :),'    ',  ...
-                                deblank(ud.tnm(i, :)),', ',deblank(ud.cDescrip(i, :)),10]);         end
+    fwrite(fH,  ['cnd',int2str(i),'    ',ud.cnd{i}, '    ',ud.tnm{i},', ',ud.dsc{i},10]);           end;
+%
+fwrite(fH,  ['% ',10,'% ',10],  'char');
 % group initial lines:
-fwrite(fH,  ['% ',10,'% group initial definition lines',10, ...
-    '% format: $G descriptions (description in the study log file)',10],  'char');
-for i=1:1:size(ud.gini,1);
-    fwrite(fH,  ['$',ud.gini(i),'  ',ud.gDescrip(i, :),' (',ud.gMat(i, :),')',10],  'char');        end
-%
-% comment lines:
-fwrite(fH,  ['% ',10,'% comment lines may be added as follows',10,  ....
-    '% - PET-/MRI-related comments: Insert between ''snm'' lines as',10,    ...
-    '% !PET #1: comments in one line, spaces allowed',10, ...
-    '% - Other comments: Insert above the first ''snm'' line',10, ...
-    '% !whatever in one line, spaces allowed',10,'% ',10,'% ',10],      'char');
-% 
-%
-% for i=find(im1'>0)
-%     s                           = load(fullfile(sfls(1).folder,sfls(im1(i)).name))
-%     fwrite(fH,  ['% ',10,'% subject #',int2str(i),10],                  'char');
-%     fwrite(fH,  ['snm     ',snm{i},10,'g       ',ginis(i),,'% ',10],    'char');
-%     if s.mri_sfl(1)=='?';       fwrite(fH,  ['0       ?',10],           'char');
-%     else;
-%         
-%     fwrite(fH,  ['% ',10]
-% 
-% 
-
 fclose(fH);
 disp('.done! (administration portion of scanDB.m)');
 disp([' output: ',ud.sdb]);
@@ -1940,9 +1184,6 @@ function                        local_update(i2);
 dx0                             = pwd;
 ud                              = getappdata(gcf, 'UserData');
 %
-if ~exist(fullfile(ud.idx,ud.iproj,'database',[ud.iproj,'_gen_scanDB.mat']),'file')
-    local_update_minimal(i2);                                                    return;         end
-
 x                               = load(fullfile(ud.idx,ud.iproj,'database', ...
                                                             [ud.iproj,'_gen_scanDB.mat']));
 y                               = load(fullfile(ud.idx,ud.iproj,'database', ...
@@ -1964,7 +1205,6 @@ snm                             = getLseg(dbLines(im1(1,:),:), 2)
 xls_var                         = readcell(x.ud.xls)
 i2{1}
 i2{2}
-
 numel(i2)
 return;
 
@@ -1979,254 +1219,5 @@ if ~ischar(a);
 winopen(fullfile(b,a));
 o1                              = struct('sdb',i2{1},   'usr',i2{2},    'xfl',fullfile(b,a));
 my_readxls('s1',o1);
-return;
-%%
-
-function                        local_update_minimal(i2)
-%%
-
-ud                              = getappdata(gcf, 'UserData');
-if ~exist(fullfile(ud.idx, ud.iproj, [ud.iproj,'_scanDB.m']),'file')>0
-    disp(['> critical problem! unable to locate: ',ud.iproj,'_scanDB.m (aborting: ',mfilename,')']);
-                                                                                    return;         end
-%                                                                                
-[c1, c2]                        = umo_getptf(fullfile(ud.idx, ud.iproj, [ud.iproj,'_scanDB.m']),0,1);
-c21                             = getLseg(c2, 1);
-%
-cm1                             = umo_cstrs(c1,[], 'cm1');
-% special lines:
-snm_str{1}                      = 'New subject';
-ic                              = 1;
-for i=umo_cstrs(c1, 'snm ', 'im1');
-    ic                          = ic + 1;
-    snm_str{ic}                 = deblank(c21(i, :));                                               end
-%
-% 
-scan_ids                        = char('0  ',c1(umo_cstrs(c1, 'cnd',  'im1'), 4:end));
-for i=1:1:size(scan_ids,1)-1;
-    pet_str{i}                  = [deblank(c2(umo_cstrs(c1, ['cnd',int2str(i),' '], 'im1'),:)), ...
-                                    ' (pet #',int2str(i),')'];                                      end
-% removing 'cnd' lines from further evaluations:
-cm1(umo_cstrs(c1, 'cnd',  'im1'), 2)                = 0;
-%
-sss                             = iv2_v4sdb(1);
-k                               = find(cm1(:,2)>0);
-im1                             = umo_cstrs(char(sss(:,1)), c1(cm1(k, 1), :), 'im1');
-%
-% mri strings 
-imm                             = umo_cstrs(c1, 'm2p ', 'im1');
-if imm(1)>0;
-    mri_str{1}                  = 'Primary MRI';        
-    for j=1:1:max(str2num(c2(imm(1), :)));
-        sss{umo_cstrs(char(sss(:,1)), ['m4p',int2str(j),' '], 'im1'), 4}    ...
-                                = ['MRI for PET: ',int2str(find(str2num(c2(imm(1), :))==j))];       end
-%
-else;
-    mri_str{1}                  = 'MRI';                                                            end
-%
-% removing 'per project items from further considerarion:
-for i=find(im1'>0);
-    if sss{im1(i),3}(3)=='p';   cm1(k(i), 2)                = 0;                            end;    end
-%
-% special characters
-% group initials & definitions, if any:
-gis                             = c21(umo_cstrs(c1,'g ','im1'), 1);
-g_descript                      = repmat('Not defined in scandB.m',size(gis,1),1);
-% g_defined                       = ' ';
-if any(c1(:,1)=='$');   
-    cm1(c1(:,1)=='$', 2)        = 0;
-    gis                         = [c1(c1(:,1)=='$', 2); gis];
-    g_descript                  = char(deblank(char(c2(c1(:,1)=='$', :))), g_descript);             end
-%
-cmg                             = umo_cstrs(gis,[], 'cm1');
-g_str{1}                        = 'Select group initial';
-ic                              = 1;
-for i=find(cmg(:,2)'>0)
-    ic                          = ic + 1;
-    g_str{ic}                   = [gis(i,1),': ',deblank(g_descript(i, :))];                        end
-%
-g_str{ic+1}                     = 'Set a new group initial';
-%
-%
-if any(c1(:,1)=='#')
-    q                           = find(c1(:,1)=='#');
-    imb                         = umo_cstrs(char(sss(:,1)), c1(c1(:,1)=='#', 2:end), 'im1');
-    for i=1:1:length(q);        sss{imb(i), 4}              = deblank(c2(q(i), :));                 end
-    cm1(q, :)                   = 0;                                                                end
-%
-% removing comment lines:
-cm1(c1(:,1)=='!', 2)            = 0;
-%
-k2                              = find(cm1(k,2)>0);
-if any(cm1(k(k2),2)~=cm1(k(k2(1)),2));
-    disp('.critical problem! # of entires are not equal');
-    dispCharArrays(1,c1(k(k2), :),2,int2str(cm1(k(k2),2)));
-    disp(['>manually check/fix the prblems ',10,' file (open): ', ... 
-        fullfile(ud.idx, ud.iproj, [ud.iproj,'_scanDB.m'])]);
-    edit(fullfile(ud.idx, ud.iproj, [ud.iproj,'_scanDB.m']));                       return;         end
-%     
-im1_s                           = im1(k2);
-c1_s                            = c1(k(k2), :);
-%
-ccc                             = ones(size(im1_s));
-ccc(umo_cstrs(c1_s, scan_ids, 'im1'), :)                    = 2;
-imx                             = umo_cstrs(c1_s, 'm4p', 'im1');
-if imx(1)>0;                    ccc(imx, :)                 = 2;                                    end
-
-scf                             = 8;
-bwd                             = [3.*30, size(deblank(c21(k(k2(ccc<2)),:)), 2).*scf, ...
-                                    size(char(sss(im1_s(im1_s>0),4)),2).*scf];
-
-[fH, bpos]                      = bWindow([], 'nrs',size(ccc,1)+4,               ...
-                                    'bwd',sum(bwd),     'ttl','Database updator');
-%
-set(fH,                         'CloseRequestFcn',          'delete(gcf)',    	...
-                                'Toolbar',                  'none',             ...
-                                'Menubar',                  'none',             ...
-                                'Tag',                      'Database updator');
-% 
-ic                              = 1;
-jHs                             = postJBs(fH,               'B',bpos(ic,:),[8,1;1,1]);
-set(jHs(1), 'String','Work on Middle column of green GUIs, starting from snm',  ...  
-                                'Fontweight','bold', 'BackgroundColor',iv2_bgcs(1), 'Tag','udb_info');
-set(jHs(2), 'String','Close',   'Fontweight','bold', 'BackgroundColor',iv2_bgcs(1),     ...
-                                'Callback','delete(gcf);');
-%
-ic                              = ic + 1;
-jHs                             = postJBs(fH,               'B',bpos(ic,:),[1;1]);
-set(jHs(1), 'String','Non-PET variables', 'Fontweight','bold', 'BackgroundColor',iv2_bgcs(2));
-%
-bHs                             = [];
-for i=find(ccc'==1);
-    ic                          = ic + 1;
-    jHs                         = postJBs(fH, 'B',bpos(ic,:),[floor(bwd./scf./2); 1 1 1]);
-    bHs                         = [bHs; jHs];
-    set(jHs(1), 'String', deblank(c1_s(i,:)), 'Fontweight','bold', 'BackgroundColor',iv2_bgcs(6));
-    %
-    if strcmpi(deblank(c1_s(i,:)),'snm')
-        set(jHs(2), 'Value',1, 'Style','popupmenu', 'String',snm_str,   ...
-                                'CallBack','iv2_setAproj(''update_s1_snm'',[]);');
-    elseif strcmpi(deblank(c1_s(i,:)),'g')
-        set(jHs(2), 'Value',1, 'Style','popupmenu', 'String',g_str);
-    elseif strcmpi(deblank(c1_s(i,:)),'gen')
-        set(jHs(2), 'Value',1, 'Style','popupmenu', 'String',{'F: female','M: male'});
-    elseif strcmpi(deblank(c1_s(i,:)),'age')
-        set(jHs(2), 'Value',1, 'Style','edit', 'String','nan');
-    else;
-        set(jHs(1), 'BackgroundColor',iv2_bgcs(18));
-        set(jHs(2), 'String','Hit < if excel file(s) is ready');                                    end
-    %
-    set(jHs(3), 'String',['   ',sss{im1_s(i),4}], 'HorizontalAlignment','left');                    end
-%
-ic                              = ic + 1;
-jHs                             = postJBs(fH,               'B',bpos(ic,:),[1;1]);
-set(jHs(1), 'String','PET & MRI files', 'Fontweight','bold', 'BackgroundColor',iv2_bgcs(2));
-%
-for i=find(ccc'==2)
-    ic                          = ic + 1;
-    jHs                         = postJBs(fH, 'B',bpos(ic,:),[floor(bwd./scf./2); 1 1 1]);
-    bHs                         = [bHs; jHs];
-    %
-    set(jHs(1), 'String', deblank(c1_s(i,:)), 'Fontweight','bold', 'BackgroundColor',iv2_bgcs(6));
-    set(jHs(2), 'String','?',   'CallBack','iv2_setAproj(''update_scans'',[]);')
-
-    if im1_s(i)>0;
-        set(jHs(3), 'String',sss{im1_s(i),4});
-    elseif c1_s(i,1)=='0'
-        set(jHs(3), 'String',mri_str{1});
-    else;
-        set(jHs(3), 'String',pet_str{str2num(c1_s(i, :))});                                 end;    end
-%
-ic                              = ic + 1;
-jHs                             = postJBs(fH,               'B',bpos(ic,:),[8,1;1,1]);
-set(jHs(1), 'String','Hit ''Done'' when all green items are done (Orange items = from excel files)',   ...
-                                'Fontweight','bold', 'BackgroundColor',iv2_bgcs(1));
-set(jHs(2), 'String','Done', 'CallBack','iv2_setAproj(''update_s1_done'',[]);',     ...
-                                'Fontweight','bold', 'BackgroundColor',iv2_bgcs(1));
-%
-cwUD.ccc                        = [im1_s,ccc];
-cwUD.c1_s                       = c1_s;
-cwUD.bHs                        = bHs;
-cwUD.snm                        = snm_str(2:end);
-cwUD.ifl                        = fullfile(ud.idx, ud.iproj, [ud.iproj,'_scanDB.m']);
-cwUD.lds                        = deblank(c21(umo_cstrs(c1, 'lds ','im1'), :));
-set(gcf, 'UserData',cwUD);
-return;
-%%
-
-function                        local_update_s1_snm(i2);
-%%
-if strcmpi(get(gco, 'Style'),'popupmenu'); 
-    if get(gco,'Value')==1
-        set(gco, 'String','Enter Subject ID', 'Style','edit');
-    else;
-        s0                      = get(gco, 'String');
-        local_update_disp_by_snm(s0{get(gco, 'Value')});
-    end
-    return;
-% dealing with a new subject:
-elseif strcmpi(get(gco, 'Style'),'edit')
-    set(gco, 'Style','pushbutton');
-end
-
-return
-%%
-
-function                        local_update_disp_by_snm(snm);
-%%
-
-cwUD                            = get(gcf, 'UserData');
-[c1, c2]                        = umo_getptf(cwUD.ifl, 0, 1);
-c21                             = getLseg(c2, 1);
-
-im1                             = umo_cstrs(c1, cwUD.c1_s, 'im1');
-im2                             = umo_cstrs(char('snm ','g'), cwUD.c1_s, 'im1');
-subj_no                         = umo_cstrs(deblank(c21(im1(im2==1, :), :)), [snm,' '], 'im1');
-for i=find(im2'<1);             set(cwUD.bHs(i, 2), 'String',deblank(c21(im1(i,subj_no), :)));      end
-%
-s2                              = char(get(cwUD.bHs(im2==2,2), 'String'));
-set(cwUD.bHs(im2==2,2), 'Value',find(s2(:,1)==c21(im1(im2==2,subj_no),1) & s2(:,2)==':'));
-
-return;
-%%
-
-function                        local_update_scans(i2);
-%%
-h                               = findobj(gcf, 'CallBack','iv2_setAproj(''update_s1_snm'',[]);');
-
-cwUD                            = get(gcf, 'UserData');
-%
-if strcmpi(get(h, 'Style'), 'popupmenu')
-    s0                          = get(h, 'String');
-    snm                         = s0{get(h, 'Value')};
-    % when a subject is selected:
-    if umo_cstrs(char(cwUD.snm), [snm,' '], 'im1')<1
-        set(h, 'BackgroundColor',iv2_bgcs(11));
-        pause(0.5)
-        set(h, 'BackgroundColor',iv2_bgcs(0));
-        return;
-    end
-else
-    snm                         = get(h, 'String');
-end
-snm
-return
-%%
-
-function    out                 = local_str2cell(i2);
-%%
-% recruited from: iv2_gen_lds
-%
-if iscell(i2);
-    out                         = i2{1};
-    for i=2:1:numel(i2);        out                         = fullfile(out,i2{i});                  end
-    if i2{1}(1)=='/';           out(out==filesep)           = '/';                                  end
-                                                                                    return;         end
-%
-i2x                             = i2;
-i2x(i2=='/' | i2=='\')          = ' ';
-if i2(1)=='/' || i2(1)=='\';    i2x(1)                      = i2(1);                                end
-out                             = getLseg(i2x, [0,2]);
-%
 return;
 %%

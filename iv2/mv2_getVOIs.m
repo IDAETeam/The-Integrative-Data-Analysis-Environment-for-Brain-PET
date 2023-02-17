@@ -183,19 +183,14 @@ f2w                             = sum(double(x.vois4iv2.vnos(:,2:end)>1), 1);
 im1                             = umo_cstrs(lower(char(vmo.voi_flag)),  ...
                                                             lower(char(x.vois4iv2.regVRs)), 'im1');
 %
-% vmo(im1(1)).vois_usr
 add                             = [];
 for i=find(im1'>0 & f2w>0);
     disp(['> VOI define/refine status of: ',x.vois4iv2.regVRs{i},' by subjects']);
    	% consolidating VOIs to define/refine:
   	vnos                        = local_consolidVOIs(x.vois4iv2.vnos(x.vois4iv2.vnos(:,i+1)>1,1));
-    %
-    vv                          = VOIdef(vnos);
-    disp('* VOIs to refine/define:')
-    dispCharArrays(1, vv.anm);    
-    disp(['# of VOIs to define/refine: ',int2str(size(vnos,1)),' (-: more to wrok; *: done)']);
+    disp([' # of VOIs to define/refine: ',int2str(size(vnos,1)),' (-: more to wrok; *: done)']);
     vi                          = zeros(size(vnos,1),   2);
-    [f1, g1]                    = makefarrays([], vmo(im1(i)).vois_usr, 'fbc',[1,0, 1]);
+    [f1, g1]                    = makefarrays([], vmo(im1(i)).vois_usr, 'fbc',[fbc(1, 1:2), 1]);
     clear add;
    	for i=1:1:size(f1,1);       add{i}                      = ' ';                                  end;
     s1                          = zeros(size(f1,1), 1);
@@ -208,13 +203,10 @@ for i=find(im1'>0 & f2w>0);
     %
     s2                          = repmat('-', size(f1,1), 1);
     s2(s1==size(vnos,1), :)     = '*';
-    if ~exist('add','var');     add                         = ' ';                                  end
-    dispCharArrays(1, g4iv2.yyy.snm,2,int2str(s1),1,s2,2,char(add));               
-    disp('< the end of the list');                                                                  end
+    dispCharArrays(1, g4iv2.yyy.snm,2,int2str(s1),1,s2,2,char(add));                              	end;
 %
 for i=find(im1'>0 & f2w<1);
-    disp(['> no VOIs to define/refine for: ',x.vois4iv2.regVRs{i}]);                                end 
-
+    disp(['> no VOIs to define/refine for: ',x.vois4iv2.regVRs{i}]);                                end;
 return;
 %%
 

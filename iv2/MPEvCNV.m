@@ -183,9 +183,9 @@ for i=1:1:n;
 
     eval(petc.getini);
     disp(num2str(petc.p,4));
-    [p, fval, eflg]             = fmincon(@mpeCNV,petc.p(1,petc.e),[],[],[],[], ...
-                                    petc.p(1,petc.e)./20,petc.p(1,petc.e).*20,[],optopt);
-%     [p, fval, eflg]             = fminsearch(@mpeCNV,       petc.p(1,petc.e),optopt);
+%     [p, fval, eflg]             = fmincon(@mpeCNV,petc.p(1,petc.e),[],[],[],[], ...
+%                                     petc.p(1,petc.e)./20,petc.p(1,petc.e).*20,[],optopt);
+    [p, fval, eflg]             = fminsearch(@mpeCNV,       petc.p(1,petc.e),optopt);
 %    [p, fval, eflg]             = fminunc(@mpeCNV,       petc.p(1,petc.e),optopt);
 %     predicted                   = @mpeCNVlsq;
 %     [p, err, fval, eflg]        = lsqcurvefit(predicted,petc.p(1,petc.e),cpetc.t,d4mpevcnv.mAT, ...

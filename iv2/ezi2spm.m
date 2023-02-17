@@ -86,7 +86,7 @@ if any(flpval(:));              iM(:)                       = flipXYZ(iM,   isz,
 vM(:)                           = reshape(iM,               isz(1),isz(2), isz(3));
 
 if ceqflg;                      eval(ceqval);                                                       end;
-
+% v
 v                               = spm_create_vol(v);
 spm_write_vol(v,                vM);
 

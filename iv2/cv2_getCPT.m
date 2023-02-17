@@ -46,7 +46,7 @@ set(findobj(gcf, 'Tag','L2W_gUseR0'),      ...
 set(findobj(gcf,'Tag','L2W_gUseR1C1'), 'String','Plasma',   ...
                                 'Callback','cv2_getCPT(''get'',1);',    'UserData',iii);
 %
-set(findobj(gcf,'Tag','L2W_gUseR1C2'), 'String','HPLC',     .../.,
+set(findobj(gcf,'Tag','L2W_gUseR1C2'), 'String','HPLC',     ...
                                 'Callback','cv2_getCPT(''get'',2);',    'UserData',iii);
 %
 set(findobj(gcf,'Tag','L2W_gUseR1C3'), 'String','Cancel',   ...
@@ -64,6 +64,7 @@ return;
 function                        local_get(iii);
 %%
 global g4iv2;
+
 job                             = { 'cpt',  'hplc' };
 udL2W                           = get(gcf,      'UserData');        
 udR1C1                          = get(gco,     	'UserData');
@@ -95,8 +96,7 @@ my_getCPT(job{iii(1)},  pet_is, f2);
 % my_getCPT(job{iii(1)},  {f3b}, {f2});
 %
 if exist(f2,'file');            set(gco,    'BackgroundColor',iv2_bgcs(12));                        end;
-return;
-%%
+return;%%
 
 function                        local_sover(iii);
 %%

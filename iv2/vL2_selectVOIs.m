@@ -13,19 +13,17 @@ function    vL2_selectVOIs(i1,i2, varargin);
 %   bottom rows     nbr (see below) rows of GUIs    (cwUD.qHs)
 %
 % Options:
-%   'ttl',val   Figure Name and Tag     (default: 'vL2 VOI selector')
-%   'tjb',val   what to do when figures of the same tag exist
+%   ttl,val    	Figure Name and Tag     (default: 'vL2 VOI selector')
+%   tjb,val     what to do when figures of the same tag exist
 %            	(default: 'figure(h(1)); return;')
-%   'str',val   the string to display on the 1st top-row GUI
-%   'nbr',val   # of bottom rows to add (default: 1)
-%   'brc',val   how to prepare bottom row GUIs 
+%   str,val    	the string to display on the 1st top-row GUI
+%   nbr,val    	# of bottom rows to add (default: 1)
+%   brc,val    	how to prepare bottom row GUIs 
 %             	(default: [1;3] for 3 equal columns)
-%   'bwd',val   to specify the width of the window (default: 360)
-%   'mnc',val   to set minimal number of columns (dfault: depends)
+%   bwd,val   	to specify the width of the window (default: 360)
+%   mnc,val     to set minimal number of columns (dfault: depends)
 %              	'mnc',2 will make # of columns 2 (inclusive) or more
-%   'snm','on'  to add short labels (default: long labels alone)
-%               e.g., Amygdala (Am) if 'snm','on' is added
-%   'new','on'  to allow to create a new set (default: 'off')
+%   snm,'on'    to add short names (default: long labels alone)
 %
 % Notes:
 %   vL2_selectVOIs('fun',[]) is also valid.
@@ -45,7 +43,6 @@ brcval                          = [1;3];
 bwdval                          = 240+20.*3;
 mncval                          = 1;
 snmval                          = 'off';
-newval                          = 'off';
 n0                              = nargin;
 um_options;
 if ~OptionsOK;                                                                      return;         end;
@@ -158,7 +155,7 @@ if isempty(h);                                                                  
 figure(h);
 %
 set(findobj(gcf,  'Tag','infoB4voiSelector'),   'Value',1,  'Style','popupmenu',    'String',       ...
-    {'Ready (see below tabs for more)',' - highlight all VOIs to include',                          ...
+    {'Ready to set region sets',' - highlight all VOIs to include',                                 ...
     ' - hit L/R/W GUI to select/deselect by column',' * Select this tab when done'},                ...
   	'UserData',[],  'BackgroundColor',iv2_bgcs(11),'CallBack','vL2_selectVOIs(''set_selected_s1'',[]);'); 
 return;
@@ -166,50 +163,8 @@ return;
 
 function                        local_set_selected_s1(fNo, gNo);
 %%
-set(gco,   'Value',1,  'Style','edit', 'String','Enter the name',  ...
-                                    'CallBack','vL2_selectVOIs(''set_selected_s2'',[]);'); 
+disp('.not implemented');
 
-return;
-%%
-
-function                        local_set_selected_s2(fNo, gNo);
-%%
-set(gco,   'Value',1,  'Style','pushbutton');
-v_str                           = deblank(get(gco, 'String'));
-global g4iv2;
-%
-if exist(fullfile(g4iv2.yyy.idx,'vsts', [x.Info4TACs(1).vfg,'_',get(gco, 'String'),'.mat']), 'file');
-    set(gco, 'String','It''s already taken', 'BackgroundColor',iv2_bgcs(9));
-    pause(0.5);
-    set(gco, 'BackgroundColor',iv2_bgcs(11));
-    local_set_selected_s1(fNo, gNo);                                                return;         end
-%
-x                               = load(fullfile(g4iv2.yyy.idx,g4iv2.xxx(1).v4t));
-vsts                            = dir(fullfile(g4iv2.yyy.idx,'vsts', [x.Info4TACs(1).vfg,'_*.mat']));
-cwUD                            = get(gcf,                  'userData');
-
-% current selections:
-css                             = cell2mat(get(cwUD.gHs, 'Value'));
-vi                              = repmat(cwUD.vnos(:), 1, 2);
-
-nnn                             = zeros(numel(vsts), 1);
-for i=1:1:numel(vsts);
-    xi                          = load(fullfile(vsts(i).folder, vsts(i).name));
-    vi(:)                       = consolidVOINos(xi.vnos(:), vi(:,1));
-    nnn(i, :)                   = sum(abs(css - double(vi(:,2)>0)));
-end
-%
-if any(nnn<1);
-    set(gco, 'String',['= ',vsts(nnn<1).name], 'BackgroundColor',iv2_bgcs(9));
-    pause(0.5);
-    set(gco, 'BackgroundColor',iv2_bgcs(0), 'Style','pushbutton');
-    local_disp_set(fNo, gNo);
-    set(gco, 'Value',find(nnn<1,1)+1);                                              return;         end
-%
-vnos                            = vi(css>0, 1);
-save(fullfile(g4iv2.yyy.idx,'vsts', [x.Info4TACs(1).vfg,'_',v_str,'.mat']), 'vnos');
-%
-local_disp_set(fNo, gNo);
 return;
 %%
 
@@ -223,13 +178,10 @@ if strcmpi(get(gco, 'Style'),'pushbutton');
     s0{1}                       = 'Select one from existing VOI sets';
     for i=1:1:numel(vsts);      [jdx, vnm]                  = fileparts(vsts(i).name);
                                 s0{i+1}                     = vnm;                                  end;
-    %      
-    s0{end+1}                   = 'Set a new VOI set';
+    %                         
     set(gco,    'Value',1,  'Style','popupmenu',    'String',s0);                   return;         end;
 %
 if get(gco,'Value')==1;                                                             return;         end;
-if get(gco,'Value')==numel(get(gco, 'String'))
-    local_set4voisets(fNo,gNo);                                                     return;         end
 %
 cwUD                            = get(gcf,      'UserData');
 coStr                          	= get(gco,      'String');
