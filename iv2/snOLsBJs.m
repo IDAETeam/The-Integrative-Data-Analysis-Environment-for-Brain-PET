@@ -71,7 +71,7 @@ for i=1:1:size(iwUD,1);
     set(iwUD(i,2),              'DataAspectRatio',          [g4vL2{fNo}.tvs(1,[2,1]),1]);       end;
 
 set(fNo,                        'UserData',iwUD);
-g4vL2{fNo}.vNo(:)           = 1;
+g4vL2{fNo}.vNo(:)               = 1;
 snOLsDJs([],1,0);
 return;
 %%
@@ -98,13 +98,13 @@ if iwUD(1,4)<1 | iwUD(end,4)>g4vL2{fNo}.tsz(q);                                 
 
 for i=1:1:size(iwUD,1);
     axes(iwUD(i,2));
-    g4vL2{fNo}.sM(:)        = g4vL2{fNo}.iM(g4vL2{fNo}.sis + iwUD(i,4),:);
+    g4vL2{fNo}.sM(:)            = g4vL2{fNo}.iM(g4vL2{fNo}.sis + iwUD(i,4),:);
     set(iwUD(i,5),              'String',                   int2str(iwUD(i,4)));
     set(iwUD(i,3),              'cData',                    g4vL2{fNo}.sM');
     set(iwUD(i,2),              'DataAspectRatio',          [g4vL2{fNo}.tvs(1,[3,2]),1]);       end;
 
 set(fNo,                        'UserData',iwUD);
-g4vL2{fNo}.vNo(:)           = 2;
+g4vL2{fNo}.vNo(:)               = 2;
 snOLsDJs([],2,0);
 return;
 %%
@@ -129,14 +129,14 @@ if iwUD(1,4)<1 | iwUD(end,4)>g4vL2{fNo}.tsz(q);                                 
 
 for i=1:1:size(iwUD,1);
     axes(iwUD(i,2));
-    g4vL2{fNo}.cM(:)        = g4vL2{fNo}.iM(g4vL2{fNo}.tsz(1).*(iwUD(i,4) - 1)  ...
+    g4vL2{fNo}.cM(:)            = g4vL2{fNo}.iM(g4vL2{fNo}.tsz(1).*(iwUD(i,4) - 1)  ...
                                     + g4vL2{fNo}.cis,   :);
     set(iwUD(i,5),              'String',                   int2str(iwUD(i,4)));
     set(iwUD(i,3),              'cData',                    g4vL2{fNo}.cM');
     set(iwUD(i,2),              'DataAspectRatio',          [g4vL2{fNo}.tvs(1,[3,1]),1]);       end;
 
 set(fNo,                        'UserData',iwUD);
-g4vL2{fNo}.vNo(:)           = 3;
+g4vL2{fNo}.vNo(:)               = 3;
 snOLsDJs([],3,0);
 return;
 %%

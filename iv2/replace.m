@@ -12,13 +12,28 @@ function    out     = replace(i1,i2,i3);
 %   >> replace('dsa/lkf\jfaskf\j','kf\j','abc')     -> dsa/labcfasabc
 
 margin                          = 3;
-if nargin<margin;               help(mfilename);                                    return;         end;
+if nargin<margin;               help(mfilename);                                    return;         end
 
-i1L                             = [i2,i1,i2];
-s                               = findstr(i1L,              i2);
-if length(s)<3;                 disp(['.not found: ',i2,' in ',i1]);           
-                                out                         = i1;                   return;         end;
+if size(i2,2)>size(i1,2);       out                         = i1;                   return;         end;
+qqq                             = char(zeros(size(i1,2)-size(i2,2)+1, size(i2,2))+32);
+for i=1:1:size(qqq,1);          qqq(i, :)                   = i1(1, i+[0:size(i2,2)-1]);            end
+%
+im1                             = umo_cstrs(i2, qqq, 'im1');
+% when i2 was not found in i1:
+if ~any(im1>0);                 out                         = i1;                   return;         end
+%
+if size(i2,2)==size(i3,2)
+    out                         = i1;
+    for i=find(im1'>0);         out(1, i+[0:size(i2,2)-1])  = i3;                                   end
+                                                                                    return;         end
+%
+i1x                             = i1;
+for i=find(im1'>0);             i1x(1, i+[0:size(i2,2)-1])  = ' ';                                  end
+i1x_c                           = getLseg(i1x, [0,2]);
+if im1(1)>0;                    out                         = i3;                                  
+else;                           out                         = '';                                   end
 
-L                               = size(i2,  2);
-out                             = i1L(1,    s(1)+L:s(2)-1);
-for i=2:1:length(s)-1;          out                         = [out,i3,i1L(s(i)+L:s(i+1)-1)];        end;
+for i=1:1:numel(i1x_c);         out                         = [out,i1x_c{i},i3];                    end
+
+if im1(end)<1;                  out                         = out(1, 1:end-size(i3,2));             end  
+

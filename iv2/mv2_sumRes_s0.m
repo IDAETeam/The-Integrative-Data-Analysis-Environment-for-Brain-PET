@@ -43,9 +43,10 @@ set(bwNo,                       'ToolBar',                  'none',     ...
                                 'Tag',                      'sumRes_00');
 % top row GUIs:
 bH1                             = postJBs(bwNo,             'B',bpos(1,:),[8,1;1,1]);
-set(bH1(1),'String',            'Select section (S#) and subsection (SS#) to work', ...
+set(bH1(1),'String',            'Select section (S#) and subsection (SS#) to work [Hit here to display all]', ...
                                 'BackgroundColor',          iv2_bgcs(2),            ...
                                 'Tag',                      'sumRes_info',          ...
+                                'CallBack',                 'mv2_sumRes_s0(''disp_all'');',         ...
                                 'FontWeight',               'bold');
 set(bH1(2),                     'String',                   'Quit',     ...
                                 'UserData',                 sfln,       ...
@@ -75,6 +76,32 @@ p1                              = get(bwNo,     'Position');
 set(bwNo,   'Position',         [p0(1),max([10,p0(2)-p1(4)-38]),p1(3:4)]);
 
 local_update;
+return;
+%%
+
+function                        local_disp_all(fH, gNo);
+%%
+global g4iv2;
+sfln                            = fullfile(g4iv2.yyy.idx,[g4iv2.yyy.ipj,'_sumRes.m']);
+%
+if ~exist(sfln,'file');                                                             return;         end
+
+[c1, c2]                        = umo_getptf(sfln, 0, 1);
+im1                             = umo_cstrs(c1, char('$$$','#'), 'im1');
+disp('.available sumRes Sections/subsections:')
+ii                              = [im1(1, im1(1,:)>0),size(c1,1)+1];
+for i=1:1:length(ii)-1;
+    disp(['S#',int2str(i),': ',deblank(c2(ii(i),:))]);
+    jc                          = 0;
+    for j=im1(2, find(im1(2,:)>ii(i) & im1(2,:)<ii(i+1)));
+        jc                      = jc + 1;
+        disp([' SS#',int2str(jc),': ',deblank(c2(j, :))]);  end;    end
+
+%     
+
+
+
+
 return;
 %%
 
@@ -837,7 +864,7 @@ if strcmpi(cstr,'more?') || strcmpi(cstr,'2nd var');
         n                       = n + double(strncmpi(get(findobj(gcf, 'Tag',['disp.Res.R', ...
                                     int2str(i),'C1']), 'String'),'data',4));                    	end;
     set(findobj(gcf, 'Tag',['disp.Res.R',int2str(rn),'C1']),    'String',['data #',int2str(n+1)]);
-    set(findobj(gcf, 'Tag',['disp.Res.R',int2str(rn+1),'C1']),  'String',cstr);
+    set(findobj(gcf, 'Tag',['disp.Res.R',int2str(rn+1),'C1']),  'Style','pushbutton', 'String',cstr);
     hC2                        	= findobj(gcf, 'Tag',['disp.Res.R',int2str(rn+1),'C2'])
     if ~iscell(get(hC2, 'String'));
         set(hC2,  'Value',1,  'Style','popupmenu',    'String',get(hC2, 'UserData'),    ...
@@ -1423,8 +1450,10 @@ disp([' output: ',ud1.sfln]);
 % disp([' output: ',tfl]); 
 disp([' opened @line: ',int2str(cp_end+1)]);
 edit(ud1.sfln);
-% edit(tfl);
-h                               = matlab.desktop.editor.getActive;
+drawnow;
+% 
+h                               = matlab.desktop.editor.getActive
+h.goToLine(cp_end+1)
 if ~isempty(h);                 h.goToLine(cp_end+1);                                           	end;
 return;
 %%

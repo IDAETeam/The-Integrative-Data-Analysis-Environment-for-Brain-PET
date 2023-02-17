@@ -167,12 +167,9 @@ res(:,  9:10)                   = vi(:,         [1,3]);
 
 eAT                             = zeros(size(mAT));
 optopt                          = optimset('Display','off','MaxIter',5000);
-% optopt                          = optimoptions(@fminunc,'Display','off','Algorithm','quasi-newton');
-% optopt                          = optimoptions('fminunc','Display','none','MaxIterations',3000);
 vstrs                           = VOIdef(vi(:,  1));
 petc.p                          = zeros(1,      6);
-% lb                              = zeros(size(petc.p(1,petc.e)))+0.001;
-% ub                              = ones(size(petc.p(1,petc.e)));
+o_flag                          = ~isempty(which('fmincon'));
 for i=1:1:n;
 % looping over regions:
 
@@ -183,9 +180,11 @@ for i=1:1:n;
 
     eval(petc.getini);
     disp(num2str(petc.p,4));
-%     [p, fval, eflg]             = fmincon(@mpeCNV,petc.p(1,petc.e),[],[],[],[], ...
-%                                     petc.p(1,petc.e)./20,petc.p(1,petc.e).*20,[],optopt);
-    [p, fval, eflg]             = fminsearch(@mpeCNV,       petc.p(1,petc.e),optopt);
+    if exist('fmincon','file');
+        [p, fval, eflg]         = fmincon(@mpeCNV,petc.p(1,petc.e),[],[],[],[], ...
+                                    petc.p(1,petc.e)./20,petc.p(1,petc.e).*20,[],optopt);
+    else;
+        [p, fval, eflg]         = fminsearch(@mpeCNV,       petc.p(1,petc.e),optopt);               end;
 %    [p, fval, eflg]             = fminunc(@mpeCNV,       petc.p(1,petc.e),optopt);
 %     predicted                   = @mpeCNVlsq;
 %     [p, err, fval, eflg]        = lsqcurvefit(predicted,petc.p(1,petc.e),cpetc.t,d4mpevcnv.mAT, ...

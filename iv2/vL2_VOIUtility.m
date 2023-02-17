@@ -12,6 +12,15 @@ function    vL2_VOIUtility(i1,i2);
 %   After selecting 'Brodmann area', hit the title GUI (top-left)
 %    to make it editable. Then replace 00 (default) with the BA#.
 %
+% Using with vL2_VOIUtility(0,[])
+%   1. Hit the key of the first character of the structure you are looking
+%      for to display structures starting the character.
+%      - Try another key string of the structure, if not found
+%   2. Hit the structure GUI to dispay the IDAE's DOIID#
+%   3. Select between whole (left + right), left, and right @ 2nd-left
+%   4. Select descriptive terms @3rd-left, if needed
+%   5. Hit the VOIID# GUI to display in the command window (for copying)
+%
 % (cL)2009    hkuwaba1@jhmi.edu 
 
 margin                          = 2;
@@ -93,7 +102,7 @@ bH                              = findobj(gcf,'Tag',        'Hit a key to displa
 bH                              = bH(1);
 vH                              = findobj(gcf,  'TAG',      'VOIIDNo');
 vH                              = vH(1);
-if vH(1)==gco;                	disp('yes');                                        return;         end;
+if vH(1)==gco;                	disp(get(gco,'String'));                            return;         end
 vno                             = get(bH(1),                'UserData');
 if isempty(vno);                                                                    return;         end;
 x                               = [0,1,2,0,0,1,2,0,1,2];

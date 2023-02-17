@@ -52,10 +52,18 @@ for i=1:1:size(i2,2)-1;
 fls                             = char(fff);
 fi                              = fis(:); 
 ttt                             = zeros(size(fls,1),        2);
+vi                              = repmat(vnoval,1,sum(fi>0)+1);
+ic                              = 1;
 for i=find(fi'>0);
+    ic                          = ic + 1;
     x                           = m08_ploteAT(deblank(fls(i, :)),'vno',vnoval);
+    vi(:, [1,ic])               = consolidVOINos(x.vnos, vnoval);
     [v, ttt(i, 1)]              = min(abs(x.mxs(:, 1)-x.exs(1, 1)));
     [v, ttt(i, 2)]              = min(abs(x.mxs(:, 1)-x.exs(end, 1)));                              end;
+%
+% reference regions are often not included in fitted data:
+vnoval                          = vnoval(prod(vi(:, 2:end),2)>0);
+
 %
 tt2                             = zeros(max(ttt(:,2) - ttt(:,1)),   1);
 for i=1:1:size(tt2,1);          tt2(i,  :)                  = sum(ttt(:,2)==ttt(:,1)+i);            end;

@@ -59,16 +59,10 @@ function        out             = local_getdef;
 %
 % structture #s are xx000, xx400, or xx700 (e.g.,  51400 = medial frontal lobe);
 % left = +100 / right = +200
+% 
+% Looking for unsed VOIID#s for brain structures? See the end of this code
 
-% v               = str2num(astrs(:,29:33));
-% vnostr          = astrs(:,29:33);
-% for i=4:1:9;
-%     [v2, is]    = sort(v(astrs(:,29)==int2str(i)));
-%     k           = find(astrs(:,29)==int2str(i));
-%     disp('%');
-%     disp(astrs(k(is),   1:33));
-% end;
-    
+
 % anatomical strings
 %long name           sym     IDNo       short name
 astrs               = [
@@ -81,11 +75,17 @@ astrs               = [
 'orbital operculum          OO      73700    orb.operc      b';
 'pars triangularis          PT      74400    pars.triang    b';
 'rectal gyrus               RG      76000    rectal         b';
+'parietal operculum         POp     77400    p.operculum    b';
+'central operculum          COp     98700    MUSE-defined   b';
+'cerebral exterior          CEx     98400    MUSE-defined   b';
+'basal forebrain            BFB     89700    MUSE-defined   b';
 'olfactory bulb             Ob      51700    olfactory      b';
 'frontal pole               FP      51020    frontal pol    b';
 'caudal middle frontal      cmFr    51050    caudal.m.fr    b';
 'rostral middle frontal     rmFr    51015    rostral.m.f    b';
 'temporal pole              TP      52020    temporal po    b';
+'planum temporale           PlT     77700    planum.Tp      b';
+'planum polare              PlP     78400    planum.Polare  b';
 'fronto-orbital             FOb     31400    fronto-orbi    b';
 'cingulate                  Cg      58000    cingulate      b';
 'anterior cingulate         AC      58400    ant.cingul     b';
@@ -148,6 +148,7 @@ astrs               = [
 'peri-ventr.gray            PVG     69700    PVG            b';
 'pituitary grand            PG      93700    pituitgrand    b';
 'skull                      SK      99700    skull          b';
+'subcallosal area           SCA     99400    subCC.area     b';
 'colliculus                 Cc      93400    colliculus     b';
 'Braak I                    B1      45010    Braak I        b';
 'Braak II                   B2      45020    Braak II       b';
@@ -419,3 +420,13 @@ im1                             = umo_cstrs(xxx.anms,istr,  'im1');
 out(:,  1)                      = xxx.vnos(im1,     :);
 return;
 %%
+
+v0 = zeros(150,1); 
+ic = 0; 
+for i=50:1:99; for j=[0,4,7];   ic                          = ic + 1; 
+                                v0(ic, :)                   = i.*1000+j.*100;               end;    end
+%
+v                               = VOIdef([]);
+vi                              = consolidVOINos(v.vnos, v0);
+% to display available VOIID#s:
+vi(vi(:,2)<1, 1)

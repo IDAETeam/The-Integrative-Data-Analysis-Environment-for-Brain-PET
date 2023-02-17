@@ -91,7 +91,7 @@ ccc                             = [1,1,1,1,1,1,1,0,0,0,1,1,1]';
 % disp([char(mstrs),int2str(mmm)])
 imm                             = umo_cstrs(lower(char(inhdr)),lower(char(mstrs)),  'im1');
 if any(~imm(mmm>0,1));          disp('.problem! following critical fields are missing: ');
-                                dispCharArrays(1,mstr(mmm>0 & imm<1, :));
+                                dispCharArrays(1,char(mstrs(mmm>0 & imm<1)));
                                 disp(char(mstrs{find(~imm(:,1))}));
                                 hOK                         = 0;                                    end;
 if ~hOK;                                                                            return;         end;
@@ -191,7 +191,7 @@ if fc==1;                       disp('.original orientation: sagittal');
 elseif fc==2;                   disp('.original orientation: coronal');
                                 [vM, isz]                   = transViews(vM,isz,'cor',  'ovw','tra');
                                 vsz                         = vsz(1,    [1,3,2]);
-    if ~flpflg;                 flpval                      = [0,1,1];                              end;
+    if ~flpflg;                 flpval                      = [1,1,1];                              end;
 % original = trans-axial view:
 elseif fc==3;                   disp('.original orientation: trans-axial');
     if ~flpflg;                 flpval                      = [1,1,0];                              end;

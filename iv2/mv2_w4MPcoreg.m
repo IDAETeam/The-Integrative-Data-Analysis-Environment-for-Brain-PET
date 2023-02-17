@@ -1,5 +1,5 @@
 function    out                 = mv2_w4MPcoreg(i1,i2,i3,i4); 
-% To manage processes for MRI-PET coregistration (for ver.iv2)
+% To manage processes for MRI-PET coregistration (for ver.iv2)local_pet_d2i
 %       
 %       usage:      mv2_w4MPcoreg(taks#,iii,ooo,fbc)
 %       
@@ -106,6 +106,7 @@ for i=umo_cstrs(char(vmo.voi_flag),'fs81 ', 'im1');
         vok(:, ic)              = double(mv2_get_dnum({f1})<xyz_dnum(ic));                  end;    end;
 %
 if ~any(vok>0);                 disp('.not ready for PET-to-MRI coregistration (ver.multi-FS)');
+                                disp('> check if VOIs to define/refine are done (most likely cause)');
                                 disp([' subject: ',g4iv2.yyy.snm(fbc(2), :)]);      return;         end;   
 %
 p2m                             = mv2_get_m2m_p2m('p2m',fbc(1,1:3),ooo{1});
@@ -870,7 +871,7 @@ ddo                             = mv2_get_dnum(ooo);
 % disp(num2str([ddo(1);ddi(1)]))
 % 
 if mv2_get_dnum(ooo(1))<mv2_get_dnum({mri});
-    disp('> coreistering PET (original) to MRI for cropping');
+    disp('> coregistering PET (original) to MRI for cropping');
     local_coreg_pet2mri(mri, iii{1}, xyz, ooo{1});                                                  end;
 %
 if ~exist(ooo{1},'file');       disp(['.??? @local_crop_pet (',mfilename,')']);   	return;         end;
@@ -944,10 +945,14 @@ function                        local_review_ctac(iii,ooo,fbc);
 % char(iii)
 %
 %
+% disp(char(iii))
+% disp(' ')
+% disp(char(ooo))
+% return;
 global g4iv2;
 pp                              = get(groot,    'PointerLocation');
 plotmAT(iii{1});
-cTAC                            = get(findobj(gca, 'Marker','o'), 'YData');
+% cTAC                            = get(findobj(gca, 'Marker','o'), 'YData');
 set(gcf,    'Toolbar','none',   'Units','pixels',   'Visible','off',    'Tag','checkRRBs',  'Name','');
 set(gca,    'Units','pixels');
 title(['Subject: ',deblank(g4iv2.yyy.snm(fbc(2),:)),'; PET #',int2str(fbc(3)),  ...
@@ -958,11 +963,12 @@ p0                              = get(gcf,  'Position');
 set(gcf,    'Position',p0.*[1,1,1.1,1]);
 px                              = get(gca,  'Position');
 %
-h1                              = uicontrol('style','pushbutton',   'String','approve', ...
+h1                              = uicontrol('style','pushbutton',   'String','Approve', ...
     'position',[ceil(px(1)+px(3)+10),px(2)+px(4)-20,80,20],    'Fontsize',12,           ...
     'BackgroundColor',[1,1,1],  'ForegroundColor',[0,0,0],	'Tag','checkRRBs_h1');
 %
 mv2_approve('set',{'Tag','checkRRBs_h1'}, {ooo{1},'@mv2_w4MPcoreg(''ctac_approved'',[],[],[]);','a'});
+
 %
 h2                              = uicontrol('style','pushbutton',   'String','Correct', ...
     'position',[ceil(px(1)+px(3)+10),px(2)+px(4)-50,80,20],     'Fontsize',12,          ...
@@ -973,25 +979,32 @@ h3                              = uicontrol('style','pushbutton',   'String','Cl
     'position',[ceil(px(1)+px(3)+10),px(2)+px(4)-80,80,20],     'Fontsize',12,          ...
     'Tag','checkRRBs_h3',   'CallBack','delete(gcf);');
 % 
-h4                              = uicontrol('style','pushbutton',   'String','Take It', ...
+h4                              = uicontrol('style','pushbutton',   'String','Hide text',   ...
     'position',[ceil(px(1)+px(3)+10),px(2)+px(4)-110,80,20],   	'Fontsize',12,          ...
-    'CallBack','mv2_w4MPcoreg(''prep_ctac'',[],[],[]);',    'Enable','off', 'Tag','checkRRBs_h4');
+    'CallBack','mv2_w4MPcoreg(''prep_ctac'',[],[],[]);',    'Enable','on', 'Tag','checkRRBs_h4');
 % 
-h5                              = uicontrol('style','pushbutton',   'String','Cancel',  ...
-    'position',[ceil(px(1)+px(3)+10),px(2)+px(4)-130,80,20],   	'Fontsize',12,          ...
-    'CallBack','mv2_w4MPcoreg(''prep_ctac'',[],[],[]);',    'Enable','off', 'Tag','checkRRBs_h5');
+h5                              = uicontrol('style','pushbutton',   'String','Disapprove',  ...
+    'position',[ceil(px(1)+px(3)+10),px(2)+px(4)-130,80,20], 'Fontsize',12, 'Tag','checkRRBs_h5');
+%
+[qdx, qnm, qex]                 = fileparts(ooo{1});
+mv2_approve('set',{'Tag','checkRRBs_h5'}, {fullfile(qdx, [qnm(1:end-2),'ng',qex]),'d'});
+set(h5, 'String','Disapprove');
 %
 set(gcf,    'Position',[pp(1)-ceil(px(1)+px(3)+20),pp(2)-(px(2)+px(4)-10),p0(3).*1.1,p0(4)],    ...
                                 'Visible','on');
 % 
-% when info.mat is already exists:                            
+% when info.mat is already exists:       
 if exist(ooo{3},'file');        
     s                           = load(ooo{3});
     if  strcmpi(iii{end},'noHMC');
         if ~isfield(s.sss{1},'done');
                                 s.sss{1}.done               = zeros(1, 5);                          end;
-        if any(abs(s.sss{1}.xy(:,2)-cTAC)>10^-6);
-            plot(s.sss{1}.xy(:,1), s.sss{1}.xy(:,2), 'r.:',  'DisplayName','original TAC');       	end;
+        [idx, inm]              = fileparts(iii{1});
+        % fullfile(idx, [inm,'_original.eza'])
+        if exist(fullfile(idx, [inm,'_original.eza']), 'file')
+            t_v0                = gei(fullfile(idx, [inm,'_original.eza']), 'PETtimes');
+            mAT_v0              = ged(fullfile(idx, [inm,'_original.eza']), 1);
+            plot(t_v0(:,1), mAT_v0(:,1), 'r.:',  'DisplayName','original TAC');                     end;
         %
         local_review_ctac_add_recorded(s.sss{1}, s.sss{1}.msiir, fbc(1, 1:3));
       
@@ -1000,7 +1013,14 @@ if exist(ooo{3},'file');
         [f1, g1]                = mv2_genfln(fullfile('pet',[g4iv2.xxx(1).pio,'_means.eza']), fbc(1:3));
         if g1>0;                t                           = gei(f1,   'PETtimes');
                                 mAT                         = ged(f1,   1);
-                                plot(t(:,1), mAT, 'b.:',  'DisplayName','noHMC');           end;    end;
+                                plot(t(:,1), mAT, 'b.:',  'DisplayName','noHMC');                   end
+        [idx, inm]              = fileparts(iii{1});
+        % fullfile(idx, [inm,'_original.eza'])
+        if exist(fullfile(idx, [inm,'_original.eza']), 'file')
+            t_v0                = gei(fullfile(idx, [inm,'_original.eza']), 'PETtimes');
+            mAT_v0              = ged(fullfile(idx, [inm,'_original.eza']), 1);
+            plot(t_v0(:,1), mAT_v0(:,1), 'r.:',  'DisplayName','original TAC');                     end;
+    end
                                                                                     return;         end;
 %
 if  strcmpi(iii{end},'noHMC');
@@ -1013,17 +1033,33 @@ if  strcmpi(iii{end},'noHMC');
     sss.msiir                   = sss.sme(:, [2,5,5,5,5]); 
 % trying to plot noHMC TAC if hmcMIT:
 elseif strncmpi(iii{end},'hmc',3);
-    hmc_flg                     = g4iv2.xxx(1).ifc(1, size(g4iv2.xxx(1).pio,2)+2:end);
+    % hmc_flg                     = g4iv2.xxx(1).ifc(1, size(g4iv2.xxx(1).pio,2)+2:end);
   	sss                         = struct('rsz_eza',iii{1},  'rsz_ezm',iii{2},   ...
                                     'log',ooo{2},   'info',ooo{3},  'hmc',iii{end});
+    % constructing sss.sme & sss.msiir:
+    [sss.sme, ssx.msiir, tim]   = gei(iii{2},   'ssx.sme','ssx.msiir','PETtimes');
+    % size(tim)
+    if isempty(sss.sme)
+   	    sss.sme                 = [tim(:,1:2)*[2;-1],tim(:,1:2), zeros(size(tim,1), 2)];
+   	    sss.sme(:, 4)           = 1;                                                                end
+    sss.msiir                   = [sss.sme(:, 2), zeros(size(sss.sme,1),4)];
     %
-  	tim                         = gei(iii{2},   'PETtimes');
-   	sss.sme                     = [tim(:,1:2)*[2;-1],tim(:,1:2), zeros(size(tim,1), 2)];
-   	sss.sme(:, 4)               = 1;
-    sss.msiir                   = sss.sme(:, [2,5,5,5,5]);  
-    if exist(iii{end-1},'file');
-        t0                      = gei(iii{end-1},   'PETTimes');
-        plot(t0(:,1),   ged(iii{end-1}, 1), 'b.:',  'displayName','noHMC');                 end;    end;
+    % inheriting sss.sme & sss.msiir if sss.log and/or sss.info arw present: 
+    if exist(sss.log,'file');   x                           = load(sss.log);                       
+                                sss.msiir                   = x.alt_log{1};                         end
+    if exist(sss.info,'file');  x                           = load(sss.info);
+                                sss.sme                     = x.sss{1}.sme;
+                                sss.msiir                   = x.sss{1}.msiir;                       end
+    % plotting cortex TAC of noHMC, if present:
+    [ndx, nnm, nex]             = fileparts(sss.rsz_eza);
+    if exist(fullfile(ndx, [nnm,'_original',nex]),'file')
+        t                       = gei(fullfile(ndx, [nnm,'_original',nex]), 'PETtimes');
+        mAT                     = ged(fullfile(ndx, [nnm,'_original',nex]), 1);
+        plot(t(:,1), mAT(:,1), '.:',  'Color',iv2_bgcs(19), 'DisplayName','original TAC');          end
+    [f1, g1]                    = mv2_genfln(fullfile('pet',[g4iv2.xxx(1).pio,'_means.eza']), fbc(1:3));
+    if g1>0;                    t                           = gei(f1,   'PETtimes');
+                                mAT                         = ged(f1,   1);
+                                plot(t(:,1), mAT(:, 1), 'b.:',  'DisplayName','noHMC');     end;    end
 %
 % recording XY-data of cortex TAC:    
 sss.xy                          = [get(findobj(gca, 'marker','o'), 'XData')',   ...
@@ -1108,14 +1144,15 @@ function                        local_ctac_approved(iii,ooo,fbc);
 %%
 % disp('yes')
 sss                             = get(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData');
+coud                            = get(gco, 'UserData');
 %
-if strcmpi(sss.hmc,'noHMC');    alt_log{1}                  = sss.msiir;
-else;                           
-    if exist(sss.log,'file');   load(sss.log);
-                                alt_log{2}                  = sss.msiir;
-    else;                       alt_log{1}                  = sss.msiir;                        end;    end;
-    
+alt_log{1}                      = sss.msiir;    
 save(sss.log,   'alt_log');
+%
+[qdx, qnm, qex]                 = fileparts(coud{1});
+if exist(fullfile(qdx, [qnm(1:end-2),'ng',qex]),'file');
+                                delete(fullfile(qdx, [qnm(1:end-2),'ng',qex]));                     end
+%
 delete(gcf); 
 figure(findobj(groot, 'Tag','iv2L2W'));
 set(gcf, 'CurrentObject',findobj(gcf, 'String','Update')); 
@@ -1155,7 +1192,7 @@ if strcmpi(get(gco, 'Style'),'pushbutton');
         % [f2m, f4m]           	= gei(iii{3},   'fls2merge','inputfiles');
         s2                      = {'Dynamic PET without HMC', '- Suspect of segmented scan',   	...
             '- Multi-frame interpolation (not recommended)', '- Single-frame interpolation',	...
-            '- Remove last few frames at end', '- Start over (erase all markings)',             ...
+            '- Remove last few frames', '- Start over (erase all markings)',             ...
             '- All done! (Record & fix @next step)!'};
     % with HMC:
     elseif strcmpi(sss.hmc(1:3),'hmc');
@@ -1193,7 +1230,7 @@ cms                             = {'b>',    'b<'};
 ii                              = double(floor(ic./2)==ceil(ic./2)) + 1;
 delete(findobj(gca, 'Tag','correct_ctac_text'));
 text(mean(get(gca,'XLim')),get(gca,'YLim')*[6;4]./10, {['Point/click at ',  s0{ii}, ...
-    ' frame of segment-',int2str(ceil(ic./2))],   'Rt. mouse button to ignore'},    ...
+    ' frame of segment-',int2str(ceil(ic./2))],   'Rt. mouse button to cancel'},    ...
                        'Tag','correct_ctac_text',  'Fontsize',12,  'HorizontalAlignment','center');
 im                              = local_correct_ctac_get_xy(sss.xy, cms{ii},        ...
                                                             [s1{ii},' seg-',int2str(ceil(ic./2))]);
@@ -1204,8 +1241,9 @@ set(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData',sss);
 %
 ic                              = ic + 1;
 ii                              = double(floor(ic./2)==ceil(ic./2)) + 1;
+delete(findobj(gca, 'Tag','correct_ctac_text'));
 text(mean(get(gca,'XLim')),get(gca,'YLim')*[6;4]./10, {['Point/click at ',  s0{ii}, ...
-    ' frame of segment-',int2str(ceil(ic./2))],   'Rt. mouse button to ignore'},    ...
+    ' frame of segment-',int2str(ceil(ic./2))],   'Rt. mouse button if not visible here'},    ...
                        'Tag','correct_ctac_text',  'Fontsize',12,  'HorizontalAlignment','center');
 im                              = local_correct_ctac_get_xy(sss.xy, cms{ii},        ...
                                                             [s1{ii},' seg-',int2str(ceil(ic./2))]);
@@ -1284,49 +1322,57 @@ return;
 
 function                        local_correct_ctac_all(iii,ooo,fbc);
 %% all correction requests are in > 
+set(gco,    'Enable','off');
 qqq                             = get(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData');
 global g4iv2;
-% segmented scan > 
-seg_ok                          = zeros(1, ceil((sum(qqq.msiir(:,2)>0)+2)./2));
-if sum(qqq.msiir(:,2)>0)>0;
-    for i=2:1:ceil((sum(qqq.msiir(:,2)>0)+2)./2);
-        if isfield(qqq, ['seg_',int2str(i),'_sfl']);
-            eval(['sfl          = qqq.seg_',int2str(i),'_sfl;']);
-            seg_ok(:, i)       	= exist(sfl, 'file');                               end;    end;    end;
-% de-seleting seg_1:
-seg_ok(:,   1)                  = 1;
-% server path for *.ezm of seg_1:
-s                               = feval(g4iv2.yyy.lds,'svr',qqq.ezm);
-[idx,inm, iex]                  = fileparts(qqq.ezm);
-if isempty(s);
-    for i=find(seg_ok<1);       eval(['qqq.seg_',int2str(i),'_sfl                   = ''?'';']);    end;
-else;
-    % getting source files, if missing:
-    %  ok even if find(seg_ok<1) is empty
-    for i=find(seg_ok<1);
-        [fff, sdx]              = uigetfile(fullfile(s,'*.*'), ...
-                                    ['Look for Seg-',int2str(i),'; seg-1: ',inm,iex]);
-        if isempty(fff);        eval(['qqq.seg_',int2str(i),'_sfl                   = ''?'';']);
-        else;                   eval(['qqq.seg_',int2str(i),'_sfl                   = ',    ...
-                                	'fullfile(sdx, fff);']);                        end;    end;    end;
 %
-any(sum(qqq.msiir(:, 2:end),1)>0)
-if any(sum(qqq.msiir(:, 2:end),1)>0);
+% identifying source files for seg-2 and on, if any:
+if max(qqq.msiir(:,2))>0 && ~isfield(qqq,'seg_2_sfl');
+    % server path for *.ezm of seg_1:
+    s                           = feval(g4iv2.yyy.lds,'pet_d2i',qqq.ezm);
+    if isempty(s);
+        delete(findobj(gca, 'Tag','correct_ctac_text'));
+        text(mean(get(gca,'XLim')),get(gca,'YLim')*[8;2]./10,                           ...
+            {'Unable to move further (close the session)',                              ...
+            '- image server path not defined',  '(consult with your IDAE manager)'},    ...
+            'Tag','correct_ctac_text',  'Fontsize',12, 	'HorizontalAlignment','center');
+                                                                                    return;         end;
     %
-    delete(findobj(gca, 'Tag','correct_ctac_text'));
-    text(mean(get(gca,'XLim')),get(gca,'YLim')*[8;2]./10,                           ...
-        {'Correction requests are saved', 'Close thisfigure & run next steps'},     ...
-        'Tag','correct_ctac_text',  'Fontsize',12, 	'HorizontalAlignment','center');
-
+    [idx, inm, iex]             = fileparts(qqq.ezm);
+    seg_ok                      = 1;
+    for i=2:1:max([max(qqq.msiir(:,2)),2]);
+        [fff, sdx]              = uigetfile(fullfile(s,'*.*'), ...
+                                    ['Identify Seg-',int2str(i),'; seg-1: ',inm,iex]);
+        if isempty(fff);        
+            seg_ok(:)           = 0;
+            eval(['qqq.seg_',int2str(i),'_sfl               = ''?'';']);
+            disp(['> seg_',int2str(i),'_sfl: not located'])
+        else;                   
+            eval(['qqq.seg_',int2str(i),'_sfl               = fullfile(sdx, fff);']);
+            disp(['> seg_',int2str(i),'_sfl: ',fullfile(sdx, fff)]);                        end;    end;
+    if seg_ok<1;
+        text(mean(get(gca,'XLim')),get(gca,'YLim')*[8;2]./10,                           ...
+            {'Unable to locae some segment source file (close the session)',            ...
+            'If really none, do not select ''Suspec segment scan'''},                   ...
+            'Tag','correct_ctac_text',  'Fontsize',12, 	'HorizontalAlignment','center');
+                                                                                    return;         end;
+    set(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData', qqq);                                     end;
+%
+if max(qqq.msiir(:,2))>0;
+    % qqq is updated only when segmented scan is suspected
+    set(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData',qqq);
+    %
  	sss{1}                      = qqq;
+    sss{1}.seg_done             = 0;
 	save(qqq.info,  'sss');    
     disp('.done! (file of correction requests)');
     disp([' output: ',qqq.info]);                                                                   end;
-
-    
+%
 %
 alt_log{1}                      = qqq.msiir;
 save(qqq.log,   'alt_log');
+if ~any(max(qqq.msiir(:, 3:end),[],1)>0);                                           return;         end;
+local_correct_ctac_perform([],[],[]);
 return;
 %%
 
@@ -1352,11 +1398,43 @@ set(gco,    'Enable','off');
 drawnow;
 qqq                             = get(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData');
 
-sss{1}                          = qqq;
-save(qqq.info,  'sss');
+t                               = gei(qqq.rsz_eza, 'PETtimes');
+mAT                             = ged(qqq.rsz_eza, 1);
+%
+% multi-frame interpolation:
+if any(qqq.msiir(:, 3)>0);
+    for i=1:1:max(qqq.msiir(:, 3));
+        mAT(find(qqq.msiir(:, 3)==i,1)+1:find(qqq.msiir(:, 3)==i,1,'last')-1, :)    = nan;  end;    end
+%
+% single-frame interpolation:
+if any(qqq.msiir(:, 4)>0);      mAT(qqq.msiir(:, 4)>0, :)   = nan;                                  end
+% truncating frames:
+if any(qqq.msiir(:, 5)>0);      t                           = t(1:find(qqq.msiir(:, 5),1), :);
+                                mAT                         = mAT(1:find(qqq.msiir(:, 5),1), :);    end
+%
+%
+ey                              = mAT(:, 1);
+ey(isnan(mAT(:,1)), :)          = interp1(t(~isnan(mAT(:,1)), 1), ey(~isnan(mAT(:,1)), 1), ...
+                                                             t(isnan(mAT(:,1)), 1), 'makima');
+%
+hold on;
+plot(t(:,1), ey, 'r.:', 'DisplayName','predicted');
 
-alt_log{1}                      = qqq.msiir;
-save(qqq.log,   'alt_log');
+qqq.tyey                        = [t(:,1), mAT(:,1), ey];
+set(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData',qqq);
+
+set(findobj(gcf, 'Tag','checkRRBs_h4'), 'String','Do it!',    'BackgroundColor',iv2_bgcs(11));
+
+return
+
+
+% sss{1}                          = qqq;
+% save(qqq.info,  'sss');
+% 
+% alt_log{1}                      = qqq.msiir;
+% save(qqq.log,   'alt_log');
+
+
 
 delete(findobj(gca, 'Tag','correct_ctac_text'));
 text(mean(get(gca,'XLim')),get(gca,'YLim')*[6;2]./10,                               ...
@@ -1371,9 +1449,9 @@ if any(qqq.msiir(:, 3)>0) || any(qqq.msiir(:, 4)>0);
     msiir                       = qqq.msiir;
     msiir(:, 2)                 = ged(qqq.rsz_eza,  1);
     iAT                         = interpl_ezm(qqq.rsz_ezm,    msiir);
-    plot(qqq.xy(:,1), iAT,      'r.:',  'DisplayName','revised TAC');
+    plot(qqq.xy(:,1), iAT,      'g.:',  'DisplayName','revised TAC');
     um_save(qqq.rsz_eza,iAT,  struct('h2s',32,'c',mfilename,'p',qqq.rsz_eza,'cp','a'), []);       	end;
-
+% truncating at specified frame:
 if any(qqq.msiir(:, 5)>0);
     fL                          = find(qqq.msiir(:, 5)>0, 1);
     [idx, inm]                  = fileparts(qqq.rsz_ezm);
@@ -1625,49 +1703,51 @@ return;
 
 function    out                 = local_prep_ctac(iii,ooo,fbc);
 %%
-costr                           = get(gco,  'String');
-if isempty(findobj(gca, 'LineWidth',0.5));                                      return;         end;
-set(findobj(gcf, 'Tag','checkRRBs_h4'), 'Enable','off');
-set(findobj(gcf, 'Tag','checkRRBs_h5'), 'Enable','off');
-
-msiir                           = get(gcf,  'UserData');
-% one-frame interpolation:
-if ~isempty(findobj(gca, 'Marker','v', 'LineWidth',0.5));
-    h1                          = findobj(gca, 'Marker','v', 'LineWidth',0.5);
-    % 
-    if strcmpi(costr,'Cancel'); delete(h1);                                     return;         end;
-    [v, imin]                   = min(abs(msiir(:,1)-get(h1, 'XData')));
-    msiir(imin, 4)              = 2;
-    set(h1, 'LineWidth',1);
-% to remove last few frames:
-elseif ~isempty(findobj(gca, 'Marker','^', 'LineWidth',0.5));
-    h1                          = findobj(gca, 'Marker','^', 'LineWidth',0.5);
-    if strcmpi(costr,'Cancel'); delete(h1);                                     return;         end;
-    [v, imin]                   = min(abs(msiir(:,1)-get(h1, 'XData')));
-    msiir(imin, 5)              = 9;
-    % 
-    set(h1, 'LineWidth',1);
-% segments or interpolation:
-elseif ~isempty(findobj(gca, 'Marker','<', 'LineWidth',0.5))
-    h1                          = findobj(gca, 'Marker','<', 'LineWidth',0.5);
-    h2                          = findobj(gca, 'Marker','>', 'LineWidth',0.5);
-    if numel(h1).*numel(h2)~=1;	delete([h1;h2]);                                return;         end;
-    if strcmpi(costr,'Cancel'); delete([h1; h2]);                               return;         end;
-    [v, ims]                    = min(abs(msiir(:,1)-get(h1, 'XData')));
-    [v, ime]                    = min(abs(msiir(:,1)-get(h2, 'XData')));
-    
-    % segmented / interrupted segments:
-    if sum(abs(get(h1(1),'color')-[0,0,1]))<10.^-6;
-                                msiir([ims, ime], 2)        = [1; 2];
-    % interpolation:
-    else;                       msiir([ims, ime], 3)        = [1; 2];                           end;
+% performing multi-/single-frame interpretation & truncation
+if strcmpi(get(gco,'String'),'Do it!');
+    set(gco, 'String','Hide text', 'BackgroundColor',iv2_bgcs(0));
+    qqq                         = get(findobj(gcf, 'Tag','checkRRBs_h2'),   'UserData');
+    interpl_ezm(qqq.rsz_ezm, qqq.tyey);
     %
-    set([h1;h2],    'LineWidth',1);
-% ???
-else;                                                                           return;         end;
+    % truncating the scan, if desired:
+    if any(qqq.msiir(:,5)>0);
+        disp('< under construction');
+        fL                      = find(qqq.msiir(:,5)>0,1,'last');
+    else;
+        fL                      = size(qqq.msiir,1);                                                end
+    % 
+    % revising file of mean cortex TAC:
+    [qdx, qnm, qex]             = fileparts(qqq.rsz_eza);
+    if exist(qqq.rsz_eza,'file') && ~exist(fullfile(qdx, [qnm,'_original',qex]),'file')
+        copyfile(qqq.rsz_eza, fullfile(qdx, [qnm,'_original',qex]));                                end
+    %
+    um_save(qqq.rsz_eza,qqq.tyey(:,3), struct('h2s',32,'c',mfilename,'p',qqq.rsz_eza,'cp','a'), ...
+                                [], 'imagesize',[fL,1,1], 'PETtimes',qqq.sme(1:fL, 2:3));
+    disp('.done! (mean cortex TAC)');
+    disp([' output: ',qqq.rsz_eza]);
+    %
+    sss{1}                      = qqq;
+    save(qqq.info, 'sss');
+    disp('.done! (file of modification parameters)');
+    disp([' output: ',qqq.info]);
+    %
+    alt_log{1}                  = qqq.msiir;
+    save(qqq.log, 'alt_log');
+    disp('.done! (file of modification requests)');
+    disp([' output: ',qqq.log]);                                                   
+    % 
+    delete(findobj(gcf, 'Tag','correct_ctac_text'));    
+  	text(mean(get(gca,'XLim')),get(gca,'YLim')*[8;2]./10,  	...
+     	{'No more to work..', 'Close the figure and revisit the review/confirmation step'}, ...
+        'Tag','correct_ctac_text', 'Fontsize',12, 'HorizontalAlignment','center');  return;         end    
 %
-set(gcf,  'UserData',msiir);
-set(findobj(gcf, 'Tag','checkRRBs_h2'), 'Enable','on');
+%
+if strcmp(get(findobj(gcf, 'Tag','correct_ctac_text'), 'Visible'),'on');
+    set(findobj(gcf, 'Tag','correct_ctac_text'), 'Visible','off');
+    set(gco, 'String','Show text');
+else
+    set(findobj(gcf, 'Tag','correct_ctac_text'), 'Visible','on');
+    set(gco, 'String','Hide text');                                                                 end
 return;
 %%
 
@@ -1808,140 +1888,247 @@ G0_pet(1:3, :)                  = xyz';
 return;
 %%
 
-function    ssx                 = local_get_pet_seg_x(ssx, seg_nos);
+function    ssx                 = local_get_pet_seg_x(ssx, seg_nos,ihlm);
 %%
-fnms                            = fieldnames(ssx);
-% grit positions of seg_1 pet @MRI (=G0_pet) & MRI's GMOLs (G0_xyz):
-% [G0_pet, G0_xyz]                = local_vpos_mri_at_tra_rsz(ssx);
-[M10, mri, p0, bOLs]          	= gei(ssx.xyz,      'p2m_M10','mri4coreg','p2m_params','mriBOLs');
-% brain outlines @MRI:
+[idx, inm]                      = fileparts(ssx.rsz_ezm);
+[qdx, qnm]                      = fileparts(ssx.ezm);
+
+if exist(fullfile(idx, [inm,'_ezm']),'dir')~=7;
+    disp('< older version of .ezm file. delete it and re-generate');
+    disp([' file: ',ssx.rsz_ezm]);                                                  return;         end;
+
+ssx.seg_done                    = zeros(max(seg_nos),   1);
+% modifying ssx.sme
+%   ssx.sme(:, 4) = segment# & ssx.sme(:, 5) = frame # (common to all segments):  
+ssx.sme(:, 5)                   = [1:1:size(ssx.sme,1)]';
+ssx.sme(:, 4)                   = 0;
+ssx.sme(1:find(ssx.msiir(:,2)==1,1,'last'), 4)              = 1;
+for i=2:1:max(ssx.msiir(:,2));
+    if sum(ssx.msiir(:,2)==i)>1;
+        ssx.sme(find(ssx.msiir(:,2)==i,1):find(ssx.msiir(:,2)==i,1,'last'), 4)      = i;
+    else;
+        ssx.sme(find(ssx.msiir(:,2)==i,1):end, 4)           = i;                            end;    end;
+% ssx.sme
+% 
+% outputs from segment-1 to MRI coregistration - stored in ssx.xyz:
+[mri, M10, M1, p6, bOLs]        = gei(ssx.xyz,  'mri4coreg','p2m_M10','p2m_M1_','p2m_params','mriBOLs');
+%
+% brain outlines @MRI for mean cortex TAC:
 xyz                             = ged(bOLs,     1);
 G0_xyz                          = ones(4,   size(xyz,1));
 G0_xyz(1:3, :)                  = xyz';
 G1_xyz                          = G0_xyz;
+%
 % target volume for P2M:
 v0                              = spm_vol(mri);
-% grid points of rsz_ezm @MRI (=v0);
-G0_pet                          = local_gen_G0_pet(G0_xyz,v0,ssx.rsz_ezm);
-G1_pet                          = G0_pet;
-f4e                             = struct('params',p0, 'sep',[2 2],  'fwhm',[7,5]);
-
-[odx, onm]                      = fileparts(ssx.rsz_ezm);
-isz                             = gei(ssx.rsz_ezm,  'imagesize');
-jM                              = zeros(1,  prod(isz));
-vM                              = zeros(isz(1).*isz(2),     isz(3));
 %
-seg_done                        = zeros(max(seg_nos),   1);
-mAT                             = ssx.xy(:, 2);
-
-% preparation of matrices:
-tfl                             = ezi2spm(ssx.ezm,  'fno',1,    'ofl',tmpfln([], 'nii'),    'mat',M10);
-v1                              = spm_vol(tfl);
-iM                              = zeros(v1.dim(1).*v1.dim(2),   v1.dim(3));
-% re-sampling segment-1 because *_tra_rsz.ezm could be ill-coregistered
-%   it is averages of 'correct' and 'wrong' transmission scans + HM
-disp('> coregistration to MRI + resampling of segment-1:');
-if ~isfield(ssx,'seg_1_p2m');
-    n                         	= sum(seg_nos==1);
-    fprintf('%s','- averaging frames of segment-1: ');
-    for j=find(seg_nos'==1);    iM(:)                       = iM + ged(ssx.ezm, j)./n;
-                                progress_bar(j, n);                                                 end;
-    fprintf([' done!', '\n']);
-    %
-    v1                          = spm_write_vol(v1, reshape(iM(:), v1.dim));
-    p                           = spm_coreg(v0, v1,     f4e);
-  	M1x                         = spm_matrix(p(1, 1:6))\v1.mat;
- 	ssx.seg_1_p2m           	= struct('params',p, 'M0',v0.mat, 'M10',v1.mat, 'M1',M1x, ...
-                                                            'v0',v0.fname, 'v1',ssx.ezm);
-    %
-  	G1_xyz(:)                   = round(M1x\(v0.mat*G0_xyz));
- 	G1_pet(:)                   = M1x\(v0.mat*G0_pet);
-    %
-    fprintf('%s','- resampling frames of segment-1: ');
-    for j=find(seg_nos'==1);
-        iM(:)                   = ged(ssx.ezm, j);
-        mAT(j, :)             	= nanmean(iM(xyz2n(G1_xyz(1:3, :)',v1.dim)));
-        spm_write_vol(v1, reshape(iM(:), v1.dim));
-        %
-       	C                       = spm_bsplinc(v1,         [1,1,1, 0,0,0]);              
-    	jM(:)                   = spm_bsplins(C, G1_pet(1,:),G1_pet(2,:),G1_pet(3,:), [1,1,1,0,0,0]);
-        vM(:)                   = reshape(jM,   isz(1).*isz(2), isz(3));
-        save(fullfile(odx, [onm,'_ezm'], [onm,'_frm',int2str(j),'.mat']), 'vM');
-        progress_bar(j,n);                                                                          end;
-	fprintf([' done!', '\n']);
-    seg_done(1, :)            	= 1;
-else;
-    disp('< previously done (not updating)');
-    seg_done(1, :)            	= 1;                                                                end;
+% estimation parameters for segment-i to MRI coregistration
+f4e                             = struct('params',p6(1, 1:6), 'sep',[2 2],  'fwhm',[7,5]);
 %
+% 
+tfl                             = tmpfln([], 'nii');
+[tdx, tnm]                      = fileparts(tfl);
+%
+% preparation for ssx.rsz_ezm:
+[osz, cxyz]                     = gei(ssx.rsz_ezm,  'imagesize','chopped_at');
+vM                              = zeros(osz(1).*osz(2),     osz(3));
+
+% preparation at PET native space (=ssx.ezm):
+isz                             = gei(ssx.ezm,  'imagesize');
+iM                              = zeros(isz(1).*isz(2),     isz(3));
+% displacing cortical outlines from MRI to setment-1 space:
+G1_xyz(:)                       = round(M1\(v0.mat*G0_xyz));
+iM(xyz2n(G1_xyz(1:3,:)',isz))   = 1;
+p4mAT                           = find(iM(:)>0);
+
+% first, resampling segment 1 frames aligned to the MRI:
+%   in iv2_cropHRRT.m, PET frames are cropped without modifications to
+%   their orientation (by extents of GM mask with margins):
+fprintf('%s','> resampling segment-1: ');
+for i=find(ssx.sme(:,4)'==1);
+    if ~exist(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(i),'_v0.mat']),'file') && ...
+        exist(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(i),'.mat']),'file')
+        copyfile(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(i),'.mat']), ...
+            fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(i),'_v0.mat']));                        end;
+    ezi2spm(ssx.ezm, 'fno',i,  'mat',M10, 'ofl',fullfile(tdx, [tnm,'_sxfx.nii']));
+    % calculation of cortex TAC:
+    iM(:)                       = ged(ssx.ezm, i);
+    ssx.xy(i, 2)                = mean(iM(p4mAT));
+    %
+    v1                          = spm_vol(fullfile(tdx, [tnm,'_sxfx.nii']));
+    v1.M1                       = M1;
+    v1.M4G                      = M1;
+    v1.cxyz                     = cxyz;
+    v1.osz                      = osz;
+    vM(:)                       = s12_resample(v0,v1,[1,1]);
+    save(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(i),'.mat']), 'vM');
+    progress_bar(i,sum(ssx.sme(:,4)'==1));                                                          end;
+%
+fprintf([' done!', '\n']);
+ssx.seg_done(1, :)              = 1;
+%
+% [sst_1, tim_1]                  = gei(ssx.ezm,  'scanstart','PETtimes')
+ssx.seg(1).ezm                  = ssx.ezm;
+ssx.seg(1).p2m                  = ssx.xyz;
 for i=2:1:max(seg_nos);
     disp(['> working on segment-',int2str(i),':']);
- 	if umo_cstrs(char(fnms), ['seg_',int2str(i),'_sfl'], 'im1')>0;
-    	eval(['sfl              = ssx.seg_',int2str(i),'_sfl;']);
-     	[idx, inm]              = fileparts(ssx.ezm);
-        seg_ezm                 = fullfile(idx, [inm,'_seg',int2str(i),'.ezm']);
-        % generating seg_i_ezm, if not present:
-     	if exist(sfl,'file') && ~exist(seg_ezm,'file');
-            [jdx, jnm, jex] = fileparts(sfl);
-            if strcmpi(jex,'.v');
-                                v2ezm(sfl,  'ofl',seg_ezm,  'sum',0);
-            else;               disp(['> not implemented for : ',jex]);                     end;    end;
+    eval(['sfl                  = ssx.seg_',int2str(i),'_sfl;']);
+    seg_ezm                     = fullfile(qdx, [qnm,'_seg',int2str(i),'.ezm']);
+    % transferring seg_i_ezm, if not present:
+    if exist(sfl,'file') && ~exist(seg_ezm,'file');
+        [jdx, jnm, jex]         = fileparts(sfl);
+        if strcmpi(jex,'.v');   v2ezm(sfl,  'ofl',seg_ezm,  'sum',0);
+        else;                   disp(['> not implemented for : ',jex]);                     end;    end;
+    %
+    if exist(seg_ezm,'file');
+        [ssx, seg_ezm_sum]      = local_merge_segs(ssx, seg_ezm,i,ihlm);
+        if isempty(seg_ezm_sum);
+            disp('??? an unexpected sequence of segment #s');                       return;         end
         %
-        if exist(seg_ezm,'file') && ~isfield(ssx,['seg_',int2str(i),'_p2m']);
-            n                 	= sum(seg_nos==i);
-            ic                	= 0;
-            iM(:)               = zeros(size(iM));           
-            fprintf('%s',['- averaging frames of segment-',int2str(i),': ']);
-            for j=find(seg_nos'==i);    
-                                ic                          = ic + 1;
-                                iM(:)                       = iM + ged(seg_ezm, j)./n;
-                                progress_bar(ic, n);                                               	end;
-            fprintf([' done!', '\n']);
+        if ~exist(seg_ezm_sum,'file');
+            disp(['??? failed to generate averaged segment-',int2str(i)]);          return;         end
+        %
+        disp(['- coregistering segment-',int2str(i),' to MRI:']);
+        %
+        if exist([seg_ezm_sum(1, 1:end-4),'_cg2m.mat'],'file');
+            disp(' ..previously done!');
+        else;
+            ezi2spm(seg_ezm_sum, 'mat',M10, 'ofl',fullfile(tdx, [tnm,'_sum.nii']));
+            v1i                 = spm_vol(fullfile(tdx, [tnm,'_sum.nii']));
+            s12_coreg(v0,v1i, [seg_ezm_sum(1, 1:end-4),'_cg2m.mat'], 'f4e',f4e);                    end;
+        p2m                     = load([seg_ezm_sum(1, 1:end-4),'_cg2m.mat']);
+
+        %
+        clear p4mAT;
+        G1_xyz(:)               = round(p2m.M1\(v0.mat*G0_xyz));
+        iM(:)                   = zeros(size(iM));
+        iM(xyz2n(G1_xyz(1:3,:)',isz))                       = 1;
+        p4mAT                   = find(iM(:)>0);
+
+        fprintf('%s',['- resampling segment-',int2str(i),': ']);
+        jc                      = 0;
+        for j=find(ssx.sme(:,4)'==i)
+            if ~exist(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(j),'_v0.mat']),'file') && ...
+                exist(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(j),'.mat']),'file')
+                copyfile(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(j),'.mat']), ...
+                    fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(j),'_v0.mat']));                end;
+            ezi2spm(seg_ezm, 'fno',ssx.sme(j,5), 'mat',M10, 'ofl',fullfile(tdx, [tnm,'_sxfx.nii']));
+             % calculation of cortex TAC:
+            iM(:)               = ged(seg_ezm, ssx.sme(j,5));
+            ssx.xy(j, 2)        = mean(iM(p4mAT));
             %
-            v1                	= spm_write_vol(v1, reshape(iM(:), v1.dim));
-            % coregistration of seg_i_sum (=v1) to MRI (=v0): 
-            p                   = spm_coreg(v0, v1,     f4e);
-            M1x                 = spm_matrix(p(1, 1:6))\v1.mat;
-            p2m                 = struct('params',p, 'M0',v0.mat, 'M10',v1.mat, 'M1',M1x, ...
-                                                            'v0',v0.fname, 'v1',seg_ezm);
-            %
-            G1_xyz(:)           = round(M1x\(v0.mat*G0_xyz));
-            G1_pet(:)           = M1x\(v0.mat*G0_pet);
-            % n               = sum(seg_nos==i);
-            fprintf('%s',['- resampling segment-',int2str(i),': ']);
-            ic                  = 0;
-            for j=find(seg_nos'==i);
-                % loading frame j of native seg_i
-                iM(:)           = ged(seg_ezm,  j);
-                mAT(j, :)       = nanmean(iM(xyz2n(G1_xyz(1:3, :)',v1.dim)));
-                spm_write_vol(v1, reshape(iM(:), v1.dim));
-                %
-                C               = spm_bsplinc(v1,         [1,1,1, 0,0,0]);              
-                jM(:)           = spm_bsplins(C, G1_pet(1,:),G1_pet(2,:),G1_pet(3,:), [1,1,1,0,0,0]);
-                vM              = reshape(jM,   isz(1).*isz(2), isz(3));
-                save(fullfile(odx, [onm,'_ezm'], [onm,'_frm',int2str(j),'.mat']), 'vM');  
-                ic          = ic + 1;
-                progress_bar(ic,n);                                                                 end; 
-            %
-            fprintf([' done!', '\n']);
-            seg_done(i, :)  = 1;
-            eval(['ssx.seg_',int2str(i),'_ezm               = seg_ezm;']);
-            eval(['ssx.seg_',int2str(i),'_p2m               = p2m;']);
-        elseif exist(seg_ezm,'file') && isfield(ssx,['seg_',int2str(i),'_p2m']);
-                            disp('< previously done (not updating)');
-                            seg_done(i, :)                  = 1;
-        else;               disp(['< unable to locate averaged image of segment-',int2str(i)]);
-                            disp([' looked for: ',seg_ezm_sum]);                                    end;
-    else;                   disp(['< not recorded: source file for segment-',int2str(i)]);  end;    end;
+            v1                  = spm_vol(fullfile(tdx, [tnm,'_sxfx.nii']));
+            v1.M1               = p2m.M1;
+            v1.M4G              = M1;
+            v1.cxyz             = cxyz;
+            v1.osz              = osz;
+            vM(:)               = s12_resample(v0,v1,[1,1]);
+            save(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(j),'.mat']), 'vM');
+            jc                  = jc + 1;
+            progress_bar(jc, sum(ssx.sme(:,4)==i));                                                 end;
+        fprintf([' done!', '\n']);
+        ssx.seg(i).ezm          = seg_ezm;
+        ssx.seg(i).p2m          = [seg_ezm_sum(1, 1:end-4),'_cg2m.mat'];
+        ssx.seg_done(i, :)      = 1;                                                        
+    else;   
+        disp(['< unable to convert source file for segment-',int2str(i)]);                  end;    end;
 %
-% revising mean cortex TAC, if any changes:
-if any(abs(ssx.xy(:,2)-mAT)>10^-6);
-    si                      = struct('h2s',32, 'c',mfilename, 'p',ssx.rsz_eza, 'cp','a');
-    um_save(ssx.rsz_eza,    mAT,    si, []);
-    disp(['> mean cortex TAC revised',10, ' output: ',ssx.rsz_eza]);                                end;
-ssx.seg_done                = seg_done;
-ssx.seg_nos                 = seg_nos;
-ssx.done(:, 2)              = sum(seg_done>0);
+% deleting temporary files:
+delete(fullfile(tdx, [tnm,'*']));
+%
+if any(ssx.seg_done<1);                                                             return;         end;
+%
+ssx.done(:, 2)                  = 1;
+%
+% saving blank frames:
+vM(:)                           = zeros(size(vM));
+for i=find(ssx.sme(:,4)'<1);
+    save(fullfile(idx, [inm,'_ezm'], [inm,'_frm',int2str(i)]), 'vM');                               end;
+%
+si                              = struct('h2s',32, 'c',mfilename, 'p',ssx.ezm, 'cp','a');
+di                              = zeros(size(ssx.sme,1),   1); 
+df                              = zeros(size(ssx.sme,1),   10);
+eH                              = um_save(ssx.rsz_ezm,[],si,[],   ...
+                                'PETtimes',ssx.sme(:,2:3),  'imagesize',osz, 'ssx.sme',ssx.sme, ...
+                                'ssx.msiir',ssx.msiir,  'chopped_at',cxyz,                      ...
+                                'frameDuration',ssx.sme(:, [1,3])*[-1;1], 'frameScalingF',[],   ...         
+                                'seg_ezm',char(ssx.seg.ezm), 'seg_p2m',char(ssx.seg.p2m));
+for i=1:1:size(ssx.sme,1)
+    [di(i,:), df(i,:)]          = um_save(eH,['!',int2str(i),'!vM!'],208,[]);                       end;
+%
+% 
+df(:, 1:5)                      = ssx.sme;
+um_save(eH,    	1, di, df);
+disp('.done! (segment-merged dynamic PET in UMO format)');
+disp([' output: ',ssx.rsz_ezm]);
+%
+% revising mean cortical TAC
+[adx, anm]                      = fileparts(ssx.rsz_eza);
+if ~exist(fullfile(adx, [anm,'_original.eza']),'file');
+    copyfile(ssx.rsz_eza, fullfile(adx, [anm,'_original.eza']));                                    end;
+si                              = struct('h2s',32, 'c',mfilename, 'p',ssx.rsz_eza, 'cp','a');
+um_save(ssx.rsz_eza, ssx.xy(:,2), si, [], 'PETtimes',ssx.sme(:,2:3), ...
+                                'imagesize',[size(ssx.sme,1),1,1], 'reiInfo',[59000;1;1]);
+return;
+%%
+
+function  [ssx, seg_ezm_sum]    = local_merge_segs(ssx, seg_ezm, seg_no,ihlm);
+%%
+[sst_1, tim_1]                  = gei(ssx.ezm,  'scanstart','PETtimes');
+[sst_i, tim_i]                  = gei(seg_ezm,  'scanstart','PETtimes');
+%
+[idx, inm]                      = fileparts(seg_ezm);
+seg_ezm_sum                     = fullfile(idx, [inm,'_sum.ezi']);
+% when seg_1.ezm and seg_i have the same start time:
+if (str2double(sst_i) - str2double(sst_1)).*24.*60<10.^-6;
+    if ~exist(seg_ezm_sum,'file');
+        k                       = find(ssx.sme(:,4)==seg_no);
+        sumFrames(seg_ezm, ssx.sme([k(1),k(end)], 5), 'ofl',seg_ezm_sum);                           end;
+    % setting cortical TAC values of blank frames to 0:
+    ssx.xy(ssx.sme(:,4)<1, 2)   = 0;                                                return;         end;
+% decay correcting seg_ezm to the start time of seg_1.ezm:
+sc_done                         = zeros(size(tim_i,1), 1);
+scf                             = 1./(0.5.^((str2double(sst_i) - str2double(sst_1)).*24.*60./ihlm));
+for i=1:1:size(tim_i,1);
+    f0                          = dir(fullfile(idx, [inm,'_ezm'], ['*_frm',int2str(i),'.mat']));
+    sc_done(i, :)               = numel(f0);
+    if sc_done(i)==1;
+        [jdx, jnm]              = fileparts(f0(1).name);
+        if ~exist(fullfile(f0(1).folder, [jnm,'_R0.mat']),'file')
+            copyfile(fullfile(f0(1).folder, f0(1).name), fullfile(f0(1).folder, [jnm,'_R0.mat']));  end
+        %
+        vnm                     = who('-file', fullfile(f0(1).folder, [jnm,'_R0.mat']));
+        load(fullfile(f0(1).folder, [jnm,'_R0.mat']))
+        if strcmpi(vnm{1}, 'vM')
+            vM(:)               = vM.*scf;
+            save(fullfile(f0(1).folder,f0(1).name), 'vM');
+            clear vM;
+        else
+            disp(['> ',mfilename,' not ready for ',vnm{1},' @local_merge_segs']);
+            sc_done(i, :)       = -1;                                               end;    end;    end
+%
+if ~exist(seg_ezm_sum,'file');  sumFrames(seg_ezm, 'sum',   'ofl',seg_ezm_sum);                     end;
+
+sme_1                           = [tim_1(:, 1:2)*[2;-1], tim_1(:,1:2)];
+sme_i                           = [tim_i(:, 1:2)*[2;-1], tim_i(:,1:2)] + ...
+                                    (str2double(sst_i) - str2double(sst_1)).*24.*60;
+% adding blank frames:
+n                               = ceil((sme_i(1,1) - sme_1(end,3))./(sme_i(1, [1,3])*[-1;1]));
+sme_a                           = repmat([1:1:n]-1,3,1)';
+dt                              = (sme_i(1,1) - sme_1(end,3))./n;
+for i=1:1:3;
+    sme_a(:, i)                 = sme_a(:,i).*dt + sme_1(end,3) + dt./2.*(i-1);                     end;
+%
+ssx.sme                         = [ssx.sme; [sme_a, zeros(n,2)]; ...
+                                    [sme_i, zeros(size(sme_i,1),1)+seg_no, [1:1:size(sme_i,1)]']];
+%
+% ssx.xy(:, 2) will be revised in local_get_pet_seg_x:
+ssx.xy                          = [ssx.xy; ssx.sme(size(ssx.xy,1)+1:end,[2,2])];
+%
+msiir_i                         = zeros(size(sme_i,1),  5);
+msiir_i(1, 2)                   = seg_no;
+ssx.msiir                       = [ssx.msiir; zeros(size(sme_a,1),  5); msiir_i];
+ssx.msiir(:, 1)                 = ssx.sme(:, 2);
 return;
 %%
 
@@ -1951,53 +2138,44 @@ global g4iv2;
 disp(['.performing requested corrections for PET #',int2str(fbc(3)),  ...
                                                             ' (Subject: ',g4iv2.yyy.snm(fbc(2),:),')']);
 % disp(char(iii))
+hlm                             = [2.0378, 20.364, 109.77];
+im1                             = umo_cstrs(['[15O]';'[11C]';'[18F]'], g4iv2.yyy.tnm(fbc(3), :), 'im1');
+if im1(1)<1;                    
+    disp('> non-registered isotope (i.e., not [15O]/[11C]/[18F]) (aborting)');      return;         end
+ihlm                            = hlm(im1(1));
 % return;
 s                               = load(iii{2});
 ssx                             = s.sss{1};
 %
-ssx.done                        = zeros(1,5);
+if ~isfield(ssx,'done');        ssx.done                    = zeros(1,5);                           end
 ok                              = 1;
 %
 % 
 if sum(ssx.msiir(:,2)>0)>0;
-    % couning segment #s:
-    jj                          = [find(ssx.msiir(:,2)>0), zeros(sum(ssx.msiir(:,2)>0), 2)];
-    ic                          = 1;
-    for i=1:1:size(jj,1);       ic                          = ic + 1;
-                                jj(i, 2:3)                	= [floor(ic./2), ceil(ic./2)];          end;
-    % when 
-    if jj(end,2)==jj(end,3);    
-        jj(end+1, :)            = [0, jj(end,3), jj(end,3)+1];          
-    else;                       
-        jj                    	= [1, 0, 1; jj ; size(ssx.sme,1), jj(end, 2:3)+[1,0]];
-        seg_nos                 = zeros(size(ssx.sme,1),    1);
-        for i=1:1:max(jj(:,3));
-            k                   = find(jj(:,3)==i);
-            seg_nos(jj(min(k),1):1:jj(max(k),1),    :)      = i;                                    end;
-        %
-        ssx                     = local_get_pet_seg_x(ssx, seg_nos);                                end;
-    if any(ssx.seg_done<1);     ok                          = 0;                                
-    else;       
-        % revising *_avr.ezr if its older than youngest frams of rsz_ezm:
-        [odx, onm]              = fileparts(ssx.rsz_ezm);
-        fmats                   = dir(fullfile(odx, [onm,'_ezm'], '*_frm*.mat'));
-        if max([fmats.datenum])>mv2_get_dnum(iii(3));
-            sumFrames(ssx.rsz_ezm,  g4iv2.xxx(1).avr,   'f2r',ssx.seg_nos, 'ofl',iii{3});
-                                                                                    end;    end;    end;
+    disp('> correcting for interupped / segmented scan')
+    if ssx.done(2)>0;           disp(' ..previously done');
+    else;
+        % counting segment #s:
+        fnms                    = char(fieldnames(ssx));
+        im1                     = umo_cstrs(fnms(:, [1:4,6:end]), 'seg__sfl','im1');
+        for i=1:1:length(im1);
+            eval(['im1(i)       = exist(ssx.',deblank(fnms(im1(i), :)),',''file'');']);             end
+        if any(im1<1);
+            disp('< problem! unable to locate all source PET files');               return;         end
+%             im1(i)              = exist(ssx.)
+        ssx                     = local_get_pet_seg_x(ssx, [2:1:length(im1)+1],ihlm);       end;    end
 %
-if sum(ssx.msiir(:,3)>0)>0;     disp('> multi-frame intepolation - not implemented'); 
-                                ok                          = 0;                                    end;
-if sum(ssx.msiir(:,4)>0)>0;     disp('> single-frame intepolation - not implemented'); 
-                                ok                          = 0;                                    end;
-if sum(ssx.msiir(:,5)>0)>0;     disp('> not implemented');  
-                                ok                          = 0;                                    end;
+if ssx.done(2)<1;
+    disp('> correction not successful. try it again after correcting insufficiencies');
+                                                                                    return;         end
 %
-if ok>0;                        disp('.done! (performance of requested corrections)');
-                                write2ptf(ooo{1},   'segments aligned');                            end;
 sss{1}                          = ssx;
 save(ssx.info,  'sss');
 alt_log                         = ssx.msiir;
 save(ssx.log,   'alt_log');
+%
+write2ptf(ooo{1}, 'done! correction of interupped / segmented scan');
+disp('.correction of interupped / segmented scan - successful!')
 return;
 %% 
 

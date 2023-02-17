@@ -182,6 +182,6 @@ if ~i1(1);                      mmm                         = char(zeros(size(ss
                                 mm1                         = char(sss{:,   1});
                                 mmm(mm1(:,1)=='%',  :)      = ' ';
                                 disp(['*** items for scanDB.m',10,'(c1=short name to enter; ',   ...
-                                'c3=character/numner|must/reserved/x|perProject/Subject/Any)']);
+                                'c3=character/numner|must/reserved/x|perProject/Subject/Condition/Any)']);
                                 disp([mm1, char(sss{:,2}), mmm, char(sss{:,4})]);                   end;
 

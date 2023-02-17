@@ -29,14 +29,17 @@ function    [iwNo, bpos, csH] = dispImages(i1,i2,varargin);
 %   
 %   'cmp',val   to specify colormap to display ('spectral(128)')
 %   'csc',val   to specify colormap shades  (default: [1:64]' for 64 shades)
-%   'weq',val   to adjust window size, using wsz
-%               e.g., val = 'wsz(:,1) = wsz(:,1) - 200;';
 %   'ins',val   to show specified slices (=val) alone
 %   'nxy',val   to specify [column, row] numbers (val(1).*val(2)=isz(3))
 %   'ibc',val   to pass callback of imageNoGUIs (left-lower corner)
+%   'vew',val   to display 'tra'ns-axial (=default), 'cor'onal, or 'sag'gital images
+%               e.g., 'vew','sag';
+%   'lrb','on'  to add side indicating GUI on bottom right (default: 'off')
 % 
 % (cL)2016    hkuwaba1@jhmi.edu 
 
+%   'weq',val   to adjust window size, using wsz
+%               e.g., val = 'wsz(:,1) = wsz(:,1) - 200;';
 
 margin                          = 2;
 if nargin<margin;               help(mfilename);                                    return;         end;
@@ -63,12 +66,12 @@ nxyval                          = [];
 vszval                          = [1,1,1];
 mmxval                          = [];
 weqval                          = ' ';
+lrbval                          = 'off';
 
 % options:
 n0                              = nargin;
 um_options; 
 if ~OptionsOK;                                                                      return;         end;
-
 
 if ischar(i1);
 % image volume file is given:
@@ -88,9 +91,10 @@ if isempty(insval);             insval                      = [1:1:isz(3)];     
 
 if nxyflg && isz(3)<nxyval(1).*nxyval(2);
     disp('Error in ''nxy'' option: isz(3)<val(1).*val(2).');                        return;         end; 
-
+% 
+% opt comes from um_options.m:
 for i=1:1:size(opt,1);          eval(['opts.',opt(i,:),'    = ',opt(i,:),'val;']);                  end;
-
+%
 if isempty(i1);         
     [iwNo, bpos, csH]           = local_createfig([],       [isz;vsz],opts);        return;         end;
 
@@ -138,7 +142,7 @@ iwUD                            = zeros(isz(3),             opts.udw(1));
 % setting colormap:
 if ~strcmpi(opts.cmp,'off');
     eval(['ccmp                 = ',opts.cmp,'(',int2str(max(opts.csc(:))),');']);
-    set(iwNo,                   'Colormap',                 ccmp);                                  end;
+    set(iwNo,                   'Colormap',                 ccmp);                                  end
 
 
 % creating axes:
@@ -147,21 +151,31 @@ for i=1:1:isz(3);
     set(iwUD(i,2),              'DataAspectRatio',          [vsz(2),vsz(1),1]);
 
     if ~isempty(iM);             
-        iwUD(i,3)               = image(reshape(iM(:,i),isz(1),isz(2))');                           end;
+        iwUD(i,3)               = image(reshape(iM(:,i),isz(1),isz(2))');                           end
         
-    if ~isempty(opts.aud);      set(iwUD(i,2),              'UserData',opts.aud);                   end;
+    if ~isempty(opts.aud);      set(iwUD(i,2),              'UserData',opts.aud);                   end
 
     set(iwUD(i,2),              'XDir',                     'normal',   ...
                                 'YDir',                     'normal',   ...
                                 'NextPlot',                 opts.hld,   ...
                                 'Visible',                  'off');
+    if opts.lrb(2)=='n'
+        h0                      = uicontrol('style','pushbutton','visible','off');
+        set(h0, 'Position',[ipos(i,1)+ipos(i,3)-20,ipos(i,2),20,15],    ...
+            'String','R', 'Visible','on', 'Tag','dispimages_lrb');                                  end
 
     % setting image number GUIs:
     iwUD(i,5)                   = uicontrol('style','pushbutton','visible','off');
     set(iwUD(i,5),              'Position',                 [ipos(i,1:2),20,15], ...
                                 'string',                   int2str(opts.ins(i)), ...
                                 'CallBack',                 opts.ibc,   ...
-                                'Visible',                  'on');                                  end;
+                                'Visible',                  'on');                                  end
+%
+if opts.lrb(2)=='n'
+    set(findobj(gcf, 'Tag','dispimages_lrb'), 'CallBack',['cwUD = get(gcf, ''UserData''); ', ...
+        'h = findobj(gcf, ''Tag'',''dispimages_lrb''); if get(gco,''String'')==''R''; ',    ...
+        'set(h, ''String'',''L''); set(cwUD(:,2),''XDir'',''reverse''); else; ',    ...
+        'set(h, ''String'',''R''); set(cwUD(:,2),''XDir'',''normal''); end']);                    end
 
 iwUD(:,4)                       = opts.ins(:);
 
@@ -195,7 +209,7 @@ if ~isempty(opts.plt);
             rXYZ                = ged(opts.plt,             1);
             if size(rXYZ,2)~=3;
                 rXYZ            = getROIs(opts.plt,         'evs','3D','all',[]);                   end;
-        else;                   disp(['Unable to locate ... ',opts.plt]);                           end;
+        else;                   disp(['.unable to locate: ',opts.plt]);                             end;
                                                                                                     end;
     if ~isempty(rXYZ);
         vewNo                   = umo_cstrs(['tra';'sag';'cor'],lower(opts.vew(1,1:3)),'im1');
