@@ -261,23 +261,6 @@ if max(fixSer)==3;              fixSer(find(fixSer==3,1))   = 0;                
 set(c1bHs(find(fixSer<1)+1),    'BackgroundColor',iv2_bgcs(18));
 %
 o2                              = o2i(1:find(fixSer>1,1)-1);
-%     fixSer(find(fixSer==2,1):end)                           = 2;
-%     set(c1bHs())
-% 
-% % 
-% % setting callback for non-fixed left-column GUIs:
-% set(ud.c1bHs(find(fixSer~=1)+1), 'CallBack',['iv2_gen_lds(''toggle'',''',pom,''');']);
-% 
-% % 
-% set(ud.c1bHs(1), 'String','Follow the instructions below. Hit > when done');
-% set(ud.c2bHs(1), 'String','Accept',    'CallBack','iv2_gen_lds(''done'',[]);', 'Enable','off');
-% 
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',                           ...
-% 	{'* Try if one segment can narrow down the search for '
-%     ['  ',upper(pom),' source files sufficiently (to use when IDAE is up)']
-%     '> Hit a path segment (left) you think the best (i.e., the least error-prone)'
-%     '  in your system and observed/respond the results shown here'});
 return;
 %%
 
@@ -448,7 +431,7 @@ return;
 function                     	local_done_pet_ds_2(ud);
 %%
 %
-[ud.pet_ds.symbolic_c, ud.pet_ds.fixSer]                    = local_done_xxx_ds_2(ud,'pet',ud.pet_ds);
+[ud.pet_ds.symbolic_c, ud.pet_ds.cp_etc]                    = local_done_xxx_ds_2(ud,'pet',ud.pet_ds);
 %
 ud.stage                        = 'pet_ds_3';
 set(gcf,    'UserData',ud);
@@ -456,72 +439,86 @@ set(gcf,    'UserData',ud);
 return;
 %%
 
-function   [symbolic_c, fixSer] = local_done_xxx_ds_2(ud,pom,xxx_ds);
+function   [symbolic_c, mx_cp_etc]  = local_done_xxx_ds_2(ud,pom,xxx_ds);
 %%
 %
 symbolic_c                      = xxx_ds.is_segs_c;
 fixSer                          = umo_cstrs(['fixed ';'is_seg';'Series'],char(xxx_ds.is_segs_c), 'im1');
+%
+% mx_cp_etc(:, 1) = segment #s of IS to copy/modify
+% mx_cp_etc(:, 2) : 1 if major modification; 2 to to perpend; 3 to append; 4 for 2 & 3
+% mx_cp_etc(:, 3) : > 0 if copy from the study log file
+% mx_cp_etc(:, 3) = fixSer;
+mx_cp_etc                       = zeros(numel(xxx_ds.is_segs_c), 4);
+mx_cp_etc(:, 3:4)               = [double(fixSer<1), fixSer];
 % working on 'fixed' segments:
 for i=find(fixSer'==1);
     set(ud.c1bHs(i+1), 'String',[xxx_ds.real_c{i},' (fixed)']);
     symbolic_c{i}               = xxx_ds.real_c{i};                                                 end
 %
-% working on study ID, Study subject ID, and others from study log file:
+% working on study ID, Study subject ID, and other items from study log file:
 for i=find(fixSer'<1);
-    sR                          = get(ud.c2bHs(i+1), 'String');
+    sR                          = getLseg(get(ud.c2bHs(i+1), 'String'), 1);
     if strcmpi(getLseg(sR,1),'copy');
         set(ud.c1bHs(i+1), 'String',['(to ',sR,')']);
-        symbolic_c{i}           = '#study_log_file#';
+        symbolic_c{i}           = '#';
     else;
         sR(sR==' ')             = '_';
         set(ud.c1bHs(i+1), 'String', [sR, ' (from study log file)']);
-        symbolic_c{i}           = ['#',sR,'#'];                                             end;    end
+        symbolic_c{i}           = ['#',sR];                                                 end;    end
 %
 % 
 for i=find(fixSer'==2);
     sR                          = get(ud.c2bHs(i+1), 'String');
-    xxx_is_str                  = xxx_ds.c2_str_c{i}(1, find(xxx_ds.c2_str_c{i}=='(',1)+1: ...
-                                    find(xxx_ds.c2_str_c{i}==')',1,'last')-1);
+    % segment #s from IS:
+    mx_cp_etc(i, 1)             = str2double(xxx_ds.is_segs_c{i}(1, 8:end));
+    symbolic_c{i}               = '$';
+    %
+    o1                          = replace(xxx_ds.c2_str_c{i},xxx_ds.is_segs_c{i}, ' $ ');
+    o1(1, find(o1=='(',1):find(o1==')',1,'last'))           = ' ';
+    % 
+    i1                          = replace(sR, xxx_ds.is_segs_c{i}, ' $ ');
+    i1(1, find(i1=='(',1):find(i1==')',1,'last'))           = ' ';
+    % 
     % to specify modification strings later (more complex)
-    if any(sR=='*');
-        set(ud.c1bHs(i+1), 'String',[xxx_is_str,' (to modify)']);
-        symbolic_c{i}           = ['$',xxx_ds.is_segs_c{i},'$*'];
+    if any(i1=='*');
+        set(ud.c1bHs(i+1), 'String',[xxx_ds.is_segs_c{i},' (to modify)']);
+        mx_cp_etc(i, 2)         = 1;
+    %
     % the eligible string (is_seg_i or Series ID) is replaced by a string: 
-    elseif ~contains(sR,getLseg(xxx_ds.c2_str_c{i},1))
+    elseif ~any(i1=='$')
         set(ud.c1bHs(i+1), 'String',[getLseg(sR,1),' (to fix)']);
-        symbolic_c{i}                             = getLseg(sR,1);
+        symbolic_c{i}           = getLseg(sR,1);
+        mx_cp_etc(i, [1,4])     = [0, 1];
+    % 
     % no changes at all:
-    elseif strcmpi(sR(sR~=' '),xxx_ds.c2_str_c{i}(xxx_ds.c2_str_c{i}~=' '));
+    elseif strcmpi(i1(i1~=' '),o1(o1~=' '));
         % set(ud.c1bHs(i+1), 'String',[ud.pet_ds.is_segs_c{i},' (to copy)']);
-        set(ud.c1bHs(i+1), 'String',[xxx_is_str,' (as is)']);
-        symbolic_c{i}                           = ['$',xxx_ds.is_segs_c{i},'$'];
+        set(ud.c1bHs(i+1), 'String',[xxx_ds.is_segs_c{i},' (as is)']);
+    % 
     % prepend/append option:
     else;
-        if any(sR=='(');        sR(1, find(sR=='(',1):end)  = ' ';                                  end;
-        sR2                     = replace(sR,xxx_ds.is_segs_c{i},' * ');
-        sR2_c                   = getLseg(sR2, [0,2]);
-        if sR2_c{1}(1)=='*';
-            % str                 = [ud.pet_ds.is_segs_c{i},sR2_c{2},' (to modify)'];
-            str                 = [xxx_is_str,sR2_c{2},' (to modify)'];
-            str_2               = ['$',xxx_ds.is_segs_c{i},'$',sR2_c{2}];
-        else;
-            % str                 = [sR2_c{1},xxx_ds.is_segs_c{i}];
-            str                 = [sR2_c{1},xxx_is_str];
-            str_2               = [sR2_c{1},'$',xxx_ds.is_segs_c{i},'$'];
-            if numel(sR2_c)>2;  str                         = [str, sR2_c{3}];             
-                                str_2                       = [str_2, sR2_c{3}];                    end
-            str                 = [str,' (modified)']; 
-            set(ud.c1bHs(i+1), 'String',str)
-            symbolic_c{i}       = str_2;                                            end;    end;    end
+        i1_c                    = getLseg(i1, [0,2]);
+        imc                     = umo_cstrs(char(i1_c),'$', 'im1');
+        % appending only
+        if imc(1)==1           
+            mx_cp_etc(i, 2)     = 3;
+            set(ud.c1bHs(i+1), 'String',[xxx_ds.is_segs_c{i},i1_c{end},' (append)']);
+            symbolic_c{i}       = ['*',i1_c{end}];
+        else
+            % prepend only
+            if imc(1)==numel(i1_c);
+                mx_cp_etc(i, 2) = 2;
+                set(ud.c1bHs(i+1), 'String',[i1_c{1},xxx_ds.is_segs_c{i},' (preppend)']);
+                symbolic_c{i}   = ['*',i1_c{1}];
+            % prepend + append:
+            else;
+                mx_cp_etc(i, 2) = 4;
+                set(ud.c1bHs(i+1), 'String',[i1_c{1},xxx_ds.is_segs_c{i},i1_c{end},' (pre+append)']);
+                symbolic_c{i}   = ['*',i1_c{1},'*',i1_c{end}];              end;    end;    end;    end
 % 
-for i=find(fixSer'==3);
-    sR                          = get(ud.c2bHs(i+1), 'String');
-    sR(sR=='*')                 = ' ';
-    sR2                         = replace(sR,'Series_ID', ' * ');
-    cL                          = sR2(1, 1:find(sR2=='*',1)-1);
-    cR                          = sR2(1, find(sR2=='*',1)+1:end);
-    set(ud.c1bHs(i+1), 'String',[cL(cL~=' '), 'Series_ID', cR(cR~=' '),' (from MRI)']);
-    symbolic_c{i}               = [cL(cL~=' '), '&Series_ID&', cR(cR~=' ')];                        end
+for i=find(fixSer'==3);         symbolic_c{i}               = '&';                           
+                                set(ud.c1bHs(i+1), 'String','Series ID (to be determined)');        end
 
 % to make revisions feasible
 set(ud.c1bHs(size(fixSer,1)+2), 'String','Not quite right? Revise selections and hit >', 'Enable','on');
@@ -574,85 +571,6 @@ if isfield(ud,'etc');          	disp('> Other critical settings');
 return;
 %%
 
-% function                     	local_toggle(i2);
-% %%
-% % deselecting gco, if it is selected already:
-% if sum(abs(get(gco, 'BackgroundColor') - iv2_bgcs(18)))<10.^-6;
-%     set(gco, 'BackgroundColor',iv2_bgcs(0));                                        return;         end;
-% %
-% set(gco, 'BackgroundColor',iv2_bgcs(18));
-% %
-% ud                              = get(gcf, 'UserData');
-% % 
-% eval(['nr                       = numel(ud.',i2,'_is.real_c);']);
-% % i2 is eiter pet or mri:
-% i2(:)                           = lower(i2);
-% % disabling C1 GUIs:
-% 
-% set(ud.c1bHs(2:nr+1), 'Enable','off');
-% drawnow;
-% %
-% 
-% %
-% bgcs                            = cell2mat(get(ud.c1bHs, 'BackgroundColor'));
-% bg18                            = iv2_bgcs(18);
-% ii                              = find(sum((bgcs - bg18(ones(size(bgcs,1),1), :)).^2,2)<10^-6)-1;
-% %
-% im1                             = umo_cstrs('fix',char(get(ud.c2bHs(2:max(ii)+1), 'String')), 'im1');
-% im1(ii, :)                      = 1;
-% %
-% sstr                            = '';
-% for i=1:1:max(ii);
-%     if im1(i)>0;                eval(['ss{i}                = ud.',i2,'_is.real_c{i};']);
-%     else;                       ss{i}                       = '*';                                  end
-%     sstr                        = fullfile(sstr,ss{i});                                             end
-% %
-% if eval(['isfield(ud.',i2,'_is,''search_res'')']);
-%     eval(['sss                  = ud.',i2,'_is.search_res;']);
-%     % previously tried:
-%     im1                         = umo_cstrs(char(sss.str),sstr,'im1');
-%     if im1>0;
-%         set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',       ...
-%             {'* Previousely tried search criteria:'
-%                 [' - String          : ',sstr]
-%                 [' - Elapsed time    : ',num2str(sss(im1).etime)]
-%                 [' - # of paths found: ',int2str(sss(im1).n)]
-%                 '> Accept it if # < 20'
-%                 '> Add more segments (max = 2), or try another segment (deselect = hit again)'});
-%         set(ud.c1bHs(2:nr+1), 'Enable','on');                                       return;         end
-%     %
-%     q                           = numel(sss);
-% % when not tried yet:
-% else;                           q                           = 0;                                    end
-% %   
-% %
-% tic;
-% dxs                             = dir(sstr);
-% t1                              = toc;
-% %
-% sss(q+1).str                    = sstr;
-% sss(q+1).etime                  = t1;
-% cm1                             = umo_cstrs(char(dxs.folder),[],'cm1');
-% sss(q+1).n                      = sum(cm1(:,2)>0);
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
-%     {'* Current search criteria:'
-%     [' - String          : ',sstr]
-%     [' - Elapsed time    : ',num2str(sss(q+1).etime,3),' (sec)']
-%     [' - # of paths found: ',int2str(sss(q+1).n)]
-%     '> Accept it if # < 20'
-%     '> Add more segments (max = 2), or try another segment (deselect = hit again)'});
-% %
-% eval(['ud.',i2,'_is.search_res  = sss;']);
-% %
-% set(gcf, 'UserData',ud);
-% %
-% set(ud.c1bHs(2:nr+1), 'Enable','on')
-% set(ud.c2bHs(1), 'Enable','on')
-% %
-% return;
-% %%
-
 function                            local_help(i2);
 %%
 disp(['** Step of: ',get(findobj(gcf, 'Tag','iv2_gen_lds_1_1'), 'String')])
@@ -704,7 +622,7 @@ if im1(2)>0
 if im1(3)>0;
     %
   	s1{end+1}                 	= '- Resume from the section of PET paths in Data Server';
-    cb{end+1}                	= 'iv2_gen_lds(''pet_ds'',);';                                      end
+    cb{end+1}                	= 'iv2_gen_lds(''pet_ds'',ud);';                                    end
 % mri_is is present:
 if im1(4)>0;
     %
@@ -732,6 +650,7 @@ if v<2;                                                                         
 %
 ud                              = get(gcf,  'UserData');
 cb                              = get(gco,  'UserData');
+cb{v}
 eval(cb{v});
 return;
 %%
@@ -958,7 +877,7 @@ return;
 function                     	local_done_mri_ds_2(ud);
 %%
 %
-[ud.mri_ds.symbolic_c, ud.mri_ds.fixSer]                    = local_done_xxx_ds_2(ud,'mri',ud.mri_ds);
+[ud.mri_ds.symbolic_c, ud.mri_ds.cp_etc]                    = local_done_xxx_ds_2(ud,'mri',ud.mri_ds);
 %
 ud.stage                        = 'mri_ds_3';
 set(gcf,    'UserData',ud);
@@ -1091,120 +1010,6 @@ set(findobj(gcf, 'Tag',[c_tag(1, 1:end-1),'2']),   'String','User_ID');
 return;
 %%
 
-% function                     	local_done_idae_1(ud);
-% %%
-% set(gco,    'Enable','off');
-% if isfield(ud,'reuse') && isfield(ud.reuse,'idae') && ud.reuse.idae>0;
-%                                 path_x                      = fileparts(ud.idae.real);
-% else;                           [fname, path_x]             = uigetfile(fullfile(pwd,'*'));        
-%     if ~ischar(fname);         	set(gco,    'Enable','on');                         return;         end;
-%                                                                                                     end;
-% %
-% ud.idae.real                    = fullfile(path_x, '(enter a folder name without spaces)');
-% ud.idae.real_c                  = local_path2sc(ud.idae.real);
-% %                           
-% %
-% for i=1:1:numel(ud.idae.real_c)-1;
-%    	set(ud.c1bHs(i+1), 'String',ud.idae.real_c{i}, 'CallBack','iv2_gen_lds(''idae_toggle'',[]);');	end;
-% %
-% set(ud.c1bHs(i+2), 'Style','edit',  'String',ud.idae.real_c{end}, 'BackgroundColor',iv2_bgcs(6));
-% set(ud.c2bHs(i+2), 'String','IDAE-ID'); 
-% %
-% set(ud.c1bHs(i+3), 'String','Do not see your user name on left column GUIs? If No, hit >');
-% set(ud.c2bHs(i+3), 'String','Restart',  'CallBack',['ud=get(gcf,''UserData''); ',  ...
-%                     'ud.stage=''idae_0''; set(gcf,''UserData'',ud); iv2_gen_lds(''done'',[]);']); 
-% %
-% set(ud.c1bHs(1), 'String','Your home path segments. Follow below instructions. Then, hit >');
-% set(ud.c2bHs(1), 'String','Done',   'CallBack','iv2_gen_lds(''done'',[]);');
-% %
-% ud.stage                        = 'idae_2';
-% set(gcf,    'UserData',ud);
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-%     {'* Complete below tasks: ','1. Hit left column GUI showing your user name (turns orange when done)',  ...
-%     '2. Replace light green GUI with a non-existing folder name (no spaces please)',    ...
-%     '   (See MATLAB command window for existing folders)'});
-% %
-% d                               = dir(fullfile(fileparts(ud.idae.real),'*'));
-% d_name                          = char(d.name);
-% disp(['.directories in: ',fileparts(ud.idae.real)]);
-% dispCharArrays(1, char(d(d_name(:,1)~='.' & [d.isdir]'>0).name));
-% disp('> do not enter above existing folders in light green GUI.');
-% set(gco,    'Enable','on');
-% return;
-% %%
-
-% function                     	local_done_idae_2(ud);
-% %%
-% im1                             = umo_cstrs(char(get(ud.c2bHs, 'String')), ['User';'IDAE'], 'im1');
-% h0                              = findobj(gcf, 'Style','edit');
-% set(h0,     'Style','pushbutton');
-% % checking if User_ID is present:
-% if im1(1)<1;    
-%     for i=2:1:im1(2,1)-1;       set(ud.c1bHs(i),  'BackgroundColor',iv2_bgcs(11));
-%                                 pause(0.5);
-%                                 set(ud.c1bHs(i),  'BackgroundColor',iv2_bgcs(0));                   end
-%     set(h0, 'Style','edit');                                                    	return;         end
-% %
-% % when spces are presetn in the IDAE segment;
-% if im1(2)>0 && any(get(ud.c1bHs(im1(2)),'String')==' ');
-%     set(ud.c1bHs(im1(2)), 'BackgroundColor',iv2_bgcs(11));
-%     pause(0.5);
-%     set(ud.c1bHs(im1(2)), 'BackgroundColor',iv2_bgcs(6));
-%     set(h0, 'Style','edit');                                                    	return;         end
-% 
-% % constructing ud.idae.symbolic_c:
-% ss_end                          = get(ud.c1bHs(im1(2,1)),    'String');
-% ud.idae.real_c{end}             = ss_end(ss_end~=' ');
-% ud.idae.real                  	= fullfile(fileparts(ud.idae.real), ud.idae.real_c{end});
-% if exist(ud.idae.real,'dir');
-%     set(ud.c1bHs(im1(2,1)),     'String',[ud.idae.real_c{end},' - exists. replace it'],     ...
-%                                 'Style','edit', 'BackgroundColor',iv2_bgcs(11));
-%  	pause(0.5);
-%     set(ud.c1bHs(im1(2,1)),     'BackgroundColor',iv2_bgcs(6));                     return;         end;
-% %
-% s                               = mkdir(ud.idae.real);
-% if s<1;
-%     set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ...
-%         {'* Unable to create your IDAE home directory ',    ...
-%         '  (No full-access to your home directory in Data Server?)', 	...
-%         '> Gathered information saved. ''Quit'' and Consult your local manager'});   
-%     local_save([]);                                                                 return;         end;
-% %
-% ss                              = ud.idae.real_c;
-% ss{im1(1,1)-1}                  = '$User_ID$';
-% ss{end}                         = ss_end(ss_end~=' ');
-% ud.idae.symbolic_c              = ss;
-% ddd                             = ss{1};
-% for i=2:1:numel(ss);            ddd                         = fullfile(ddd, ss{i});                 end;
-% ud.idae.symbolic                = ddd;
-% %
-% ud.stage                        = 'idae_done';
-% set(gcf,    'UserData',ud);
-% set(ud.c1bHs(1), 'String','Done for IDAE home directory! Observe info-Board. Then, hit >')
-% set(ud.c2bHs(1), 'String','Move on',   'CallBack','iv2_gen_lds(''done'',[]);');
-% %
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
-%     {'* Your IDAE home directory: ',[' ',ud.idae.real],             ...
-%     '* Generalized IDAE home directory, shared by users with the same conventions:',	...
-%     [' ',ud.idae.symbolic],    '> Hit ''Display'' for more info'});
-% return;
-% %%
-% 
-% function                     	local_done_idae_done(ud);
-% %%
-% % reset left & right columns:
-% local_reset_guis(ud);
-% 
-% set(ud.c1bHs(1), 'String','Select a PET source file in Image Server');
-% set(ud.c2bHs(1), 'String','Start',   'CallBack','iv2_gen_lds(''pet_is'',0);');
-% % 
-% set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',           ...
-%     {'* Select a PET source file in Image Server to register it''s directory conventions',  ...
-%     '  - any file is OK, so long as it is in a regular PET souce file folder'});
-% return;
-% %%
-
 function                        local_search_files(i2);
 %%
 coUD                            = get(gco, 'UserData');
@@ -1328,85 +1133,6 @@ set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',{'* SPM12 folder: ',[' 
 return;
 %%
 
-% function                        local_fs_script(i2);
-% %%
-% ud                              = get(gcf,      'UserData');
-% set(gco,    'Enable','off');
-% drawnow;
-% if i2=='w';
-%     disp(['> Freesurfer script folder (Windowds): ',ud.etc.fs_script_ws_real]);
-%     disp('  Find it in you the Linux system to run Freesurfer (typically starts with /mnt)');
-%     disp('  There should be FS_done.txt  FS_submitted.txt in the flder by now');
-%     disp('> Copy & past it below');
-%     s                           = input(' Enter the folder name seen from Linux (Ret=cancel): ','s');
-%     if isempty(s);                                                                  return;         end;
-%     im1                         = umo_cstrs(char(ud.idae.symbolic_c),'$User_ID', 'im1');
-%     if im1(1)<1 || size(im1,2)>1;                                                   return;         end;
-%     %
-%     s(s=='/')                   = ' ';
-%     sc                          = getLseg(s,    [0,2]);
-%     sc{1}                       = ['/',sc{1}];
-%     im2                         = umo_cstrs(char(sc),  ud.idae.real_c{im1}, 'im1');
-%     if im2(1)<1 || size(im2,2)>1;                                                   return;         end;
-%     %
-%     sc{im2(1)}                  = '$User_ID$';
-%     ud.etc.fs_script_ds_c       = sc;
-%     out                         = sc{1};
-%     for i=2:1:numel(sc);        out                         = [out,'/',sc{i}];                  	end;
-%     ud.etc.fs_script_ds         = out;
-%     
-%     set(gcf,    'UserData',ud);
-%     set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');                 return;         end;
-% return;
-% %%
-% 
-% function                        local_fs_subject(i2);
-% %%
-% ud                              = get(gcf,      'UserData');
-% set(gco,    'Enable','off');
-% drawnow;
-% if i2=='w';
-%     disp('> Inquiring Freesurfer''s subject folder');
-%     disp('  Go to Freesurfer''s subject folder in your Linux system');
-%     disp('  (Tyoically try [your linux]: cd freesurfer/subject)');
-%     disp('  Then, type [your linux]: pwd')
-%     disp('  Copy & past the output below');
-%   	s                           = input(' Freesurfer''s subject folder in Linux) (Ret=cancel): ','s');
-%     if isempty(s);                                                                  return;         end;
-%     im1                         = umo_cstrs(char(ud.idae.symbolic_c),'$User_ID', 'im1');
-%     if im1(1)<1 || size(im1,2)>1;                                                   return;         end;
-%     %
-%     s(s=='/')                   = ' ';
-%     sc                          = getLseg(s,    [0,2]);
-%     sc{1}                       = ['/',sc{1}];
-%     im2                         = umo_cstrs(char(sc),  ud.idae.real_c{im1}, 'im1');
-%     if im2(1)<1 || size(im2,2)>1;                                                   return;         end;
-%     %
-%     sc{im2(1)}                  = '$User_ID$';
-%     ud.etc.fs_subject_ds_c      = sc;
-%     %
-%     out                         = sc{1};
-%     for i=2:1:numel(sc);        out                         = [out,'/',sc{i}];                  	end;
-%     ud.etc.fs_subject_ds        = out;
-%     set(gcf,    'UserData',ud);
-%     set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');                 return;         end;
-% % 
-% % Linux version
-% disp(i2)
-%     s                           = getenv('SUBJECTS_DIR');
-%     ud.etc.fs_subject_ds        = s;
-% 
-%     s(s=='/')                   = ' ';
-%     sc                          = getLseg(s,    [0,2]);
-%     sc{1}                       = ['/',sc{1}];
-%     ud.etc.fs_subject_ds_c      = sc;
-%     set(gcf,    'UserData',ud);
-%     set(gco,    'String','Done',    'CallBack',' ', 'Enable','on');              
-% 
-%   
-% return;
-% %%
-
 function                        local_copy_paste(i2)
 %%
 ud                              = get(gcf,  'UserData');
@@ -1487,19 +1213,19 @@ set(gcf,    'UserData',ud);
 return;
 %%
 
-function                        local_done_all_done(ud);
+function                        local_create_lds(ud);
 %%
 ud                              = get(gcf,      'UserData');
 %
 ok                              = 1;
 %
 fck                             = {'idae','pet_is','pet_ds','mri_is','mri_ds','etc'};
-fn2ck{1}                        = {'code_path','symbolic_c','symbolic'};
-fn2ck{2}                        = {'symbolic_c','format_c','search_c'};
-fn2ck{3}                        = {'symbolic_c'};
-fn2ck{4}                        = {'symbolic_c','format_c','search_c'};
-fn2ck{5}                        = {'symbolic_c'};
-fn2ck{6}                        = {'spm_home','fs_script_ws','fs_subject_ds','dump','unit'};
+fn2ck{1}                        = {'code_path','symbolic'};
+fn2ck{2}                        = {'symbolic_c'};
+fn2ck{3}                        = {'symbolic_c','cp_etc'};
+fn2ck{4}                        = {'symbolic_c'};
+fn2ck{5}                        = {'symbolic_c','cp_etc'};
+fn2ck{6}                        = {'spm_home','fs_script_ws_symbolic','fs_script_ds_symbolic','unit'};
 %
 for i=1:1:numel(fck);
     if isfield(ud,fck{i});
@@ -1508,13 +1234,13 @@ for i=1:1:numel(fck);
         im1                   	= umo_cstrs(char(fnms), char(fn2ck{i}), 'im1');
         if any(im1<1);        	disp(['.missing critical fields @ud.',fck{i}]);
                                 dispCharArrays(1, char(fnms(im1<1)));
-                                ok                          = 0;                                    end;
+                                ok                          = 0;                                    end
     else;                     	disp(['.problem! ''',fck{i},''' field missing']);
-                                ok                          = 0;                        	end;    end;
+                                ok                          = 0;                        	end;    end
 %
 if ok<1;                        set(ud.c1bHs(1), 'BackgroundColor',iv2_bgcs(11));
                                 pause(0.5);
-                                set(ud.c1bHs(1), 'BackgroundColor',iv2_bgcs(6));   return;         end;
+                                set(ud.c1bHs(1), 'BackgroundColor',iv2_bgcs(6));   return;          end
 %
 iv2_gen_lds_2(ud);
 % 
@@ -1679,6 +1405,12 @@ if isfield(ud.idae,'new_user')
         ' - Type as follows in Matlab''s command window when to use IDAE'
         ['  >> run ',fullfile(ud.idae.user_home,'start_IDAE.m')]});                 return;         end
     
-
+if ok>0;
+    set(findobj(gcf, 'Tag','iv2_gen_lds_infoB'),    'String',   ... 
+        {'* Ready to create your local adaptor file'
+        '> Hit ''Create'' @top-right'});
+    local_save([]);
+    set(ud.c2bHs(1), 'String','Create', 'CallBack','iv2_gen_lds(''create_lds'',[]);');              end
+%
 return;
 %%
